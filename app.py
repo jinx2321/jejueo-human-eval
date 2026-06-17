@@ -20,9 +20,33 @@ st.markdown("""
         font-weight: 700;
         font-size: 0.85rem;
         text-transform: uppercase;
-        color: var(--primary-color);
-        margin-bottom: 8px;
+        margin-bottom: 6px;
         letter-spacing: 0.5px;
+    }
+    
+    /* Left-bordered container cards */
+    .source-container {
+        border-left: 5px solid #FF9800;
+        background-color: var(--secondary-background-color);
+        padding: 10px 14px;
+        border-radius: 4px 8px 8px 4px;
+        margin-bottom: 10px;
+    }
+    
+    .reference-container {
+        border-left: 5px solid #4CAF50;
+        background-color: var(--secondary-background-color);
+        padding: 10px 14px;
+        border-radius: 4px 8px 8px 4px;
+        margin-bottom: 10px;
+    }
+    
+    .candidate-container {
+        border-left: 5px solid #2196F3;
+        background-color: var(--secondary-background-color);
+        padding: 10px 14px;
+        border-radius: 4px 8px 8px 4px;
+        margin-bottom: 10px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -119,7 +143,7 @@ def go_to_ptr(ptr):
         st.session_state.shuffled_candidates.pop(db_idx, None)
 
 # Main structure
-st.markdown("<h3 style='text-align: center; margin-top: 5px; margin-bottom: 15px; font-weight: bold;'>📝 LLM Sentence Scorer</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; margin-top: -50px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
 
 if total_sentences == 0:
     st.info("Please make sure `central_database.json` contains valid sentence objects and is in the same directory.")
@@ -138,7 +162,7 @@ else:
         
         # Admin Access Passcode
         st.subheader("🔑 Admin Access")
-        admin_passcode = st.text_input("Enter Passcode:", type="password", help="Enter passcode to unlock evaluation dashboard and export tools.")
+        admin_passcode = st.text_input("Enter Passcode:", type="password", help="Enter passcode to unlock evaluation dashboard.")
         is_admin = is_admin_query or (admin_passcode == ADMIN_PASSWORD)
         
         st.markdown("---")
@@ -148,7 +172,7 @@ else:
             app_mode = st.radio("App Mode", ["📝 Rate Sentences", "📊 Analytics Dashboard", "🔍 Browse Database"])
         else:
             app_mode = "📝 Rate Sentences"
-            st.info("🔒 Enter the admin passcode to access the Analytics Dashboard and Export features.")
+            st.info("🔒 Enter the admin passcode to access ")
         
         st.markdown("---")
         
@@ -161,10 +185,7 @@ else:
         st.write(f"Rated: **{session_rated_count}** / {session_size} ({session_completion_pct:.1f}%)")
         st.progress(session_completion_pct / 100.0)
         
-        # Overall progress
-        overall_rated_count = len(st.session_state.scores)
-        overall_completion_pct = (overall_rated_count / total_sentences) * 100 if total_sentences > 0 else 0
-        st.caption(f"Total Rated Overall: **{overall_rated_count}** / {total_sentences} ({overall_completion_pct:.1f}%)")
+
         
         # Jump to sentence dropdown (session scope)
         st.markdown("---")
@@ -246,13 +267,19 @@ else:
         # Display Source & Reference in clean containers
         col_src, col_ref = st.columns(2)
         with col_src:
-            with st.container(border=True):
-                st.markdown("<div class='container-title' style='margin-bottom:2px;'>Source Sentence</div>", unsafe_allow_html=True)
-                st.write(current_item.get('source', ''))
+            st.markdown(f"""
+            <div class="source-container">
+                <div class="container-title" style="color: #FF9800;">Source Sentence</div>
+                <div>{current_item.get('source', '')}</div>
+            </div>
+            """, unsafe_allow_html=True)
         with col_ref:
-            with st.container(border=True):
-                st.markdown("<div class='container-title' style='margin-bottom:2px;'>Reference Sentence</div>", unsafe_allow_html=True)
-                st.write(current_item.get('reference', ''))
+            st.markdown(f"""
+            <div class="reference-container">
+                <div class="container-title" style="color: #4CAF50;">Reference Sentence</div>
+                <div>{current_item.get('reference', '')}</div>
+            </div>
+            """, unsafe_allow_html=True)
             
         st.markdown("<hr style='margin:10px 0;' />", unsafe_allow_html=True)
 
@@ -278,22 +305,25 @@ else:
             default_val = existing_item_scores.get(key, 5) # Default score is 5
             
             # Render each candidate row side-by-side: left for text, right for slider
-            with st.container(border=True):
-                col_text, col_slider = st.columns([5, 2])
-                with col_text:
-                    st.markdown(f"<div class='container-title' style='margin-bottom: 2px;'>{display_name}</div>", unsafe_allow_html=True)
-                    st.write(candidate_text)
-                with col_slider:
-                    score = st.slider(
-                        label="Score (0-10):",
-                        min_value=0,
-                        max_value=10,
-                        value=default_val,
-                        step=1,
-                        key=f"slider_{db_idx}_{key}",
-                        label_visibility="visible"
-                    )
-                    updated_item_scores[key] = score
+            col_text, col_slider = st.columns([6, 2], gap="medium")
+            with col_text:
+                st.markdown(f"""
+                <div class="candidate-container">
+                    <div class="container-title" style="color: #2196F3;">{display_name}</div>
+                    <div style="font-weight: 500;">{candidate_text}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_slider:
+                st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+                score = st.slider(
+                    label="Score (0-10):",
+                    min_value=0,
+                    max_value=10,
+                    value=default_val,
+                    step=1,
+                    key=f"slider_{db_idx}_{key}",
+                )
+                updated_item_scores[key] = score
 
         # Save scores on change
         if str(db_idx) not in st.session_state.scores or st.session_state.scores[str(db_idx)] != updated_item_scores:
