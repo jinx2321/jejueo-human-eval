@@ -65,6 +65,11 @@ st.markdown("""
         -ms-user-select: none !important;
         user-select: none !important;
     }
+    
+    /* Reduce vertical gap between low (1-5) and high (6-10) stacked radio rows */
+    div[data-testid="column"] div[data-testid="element-container"] + div[data-testid="element-container"] div[data-testid="stRadio"] {
+        margin-top: -18px !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -408,7 +413,7 @@ else:
         with col_hdr_left:
             st.markdown("<span style='font-size: 0.9rem; font-weight: bold; color: var(--text-color);'>🔍 Candidate Sentences</span>", unsafe_allow_html=True)
         with col_hdr_right:
-            st.markdown("<div style='text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📊 Score (1-10)</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📊 Score (1-10), higher is better</div>", unsafe_allow_html=True)
 
         # Render candidate rows inside standard bordered containers for absolute vertical alignment
         options_low = [1, 2, 3, 4, 5]
