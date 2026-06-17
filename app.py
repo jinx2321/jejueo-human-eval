@@ -105,9 +105,57 @@ def save_scores(scores):
     except Exception as e:
         st.error(f"Failed to save scores: {str(e)}")
 
+def escape_html_display(text):
+    if not isinstance(text, str):
+        return text
+    # Convert characters to HTML entities so markdown parser doesn't touch them
+    return text.replace("$", "&#36;").replace("_", "&#95;").replace("*", "&#42;")
+
+# Callbacks to clear the opposite radio button group on selection
+def on_change_low(db_idx, key):
+    low_key = f"radio_low_{db_idx}_{key}"
+    high_key = f"radio_high_{db_idx}_{key}"
+    low_val = st.session_state.get(low_key)
+    if low_val is not None:
+        # Clear high column
+        st.session_state[high_key] = None
+        # Update session scores
+        if "scores" not in st.session_state:
+            st.session_state.scores = {}
+        if str(db_idx) not in st.session_state.scores:
+            st.session_state.scores[str(db_idx)] = {}
+        st.session_state.scores[str(db_idx)][key] = low_val
+        save_scores(st.session_state.scores)
+        
+        # Clear navigation warning if all candidates are rated now
+        item_scores = st.session_state.scores.get(str(db_idx), {})
+        if all(item_scores.get(k) is not None for k in candidate_keys):
+            st.session_state.show_warning = False
+
+def on_change_high(db_idx, key):
+    low_key = f"radio_low_{db_idx}_{key}"
+    high_key = f"radio_high_{db_idx}_{key}"
+    high_val = st.session_state.get(high_key)
+    if high_val is not None:
+        # Clear low column
+        st.session_state[low_key] = None
+        # Update session scores
+        if "scores" not in st.session_state:
+            st.session_state.scores = {}
+        if str(db_idx) not in st.session_state.scores:
+            st.session_state.scores[str(db_idx)] = {}
+        st.session_state.scores[str(db_idx)][key] = high_val
+        save_scores(st.session_state.scores)
+        
+        # Clear navigation warning if all candidates are rated now
+        item_scores = st.session_state.scores.get(str(db_idx), {})
+        if all(item_scores.get(k) is not None for k in candidate_keys):
+            st.session_state.show_warning = False
+
 # Load data
 database = load_database()
 total_sentences = len(database)
+candidate_keys = [k for k in database[0].keys() if k not in ["source", "reference"]] if total_sentences > 0 else []
 
 # --- BACKEND CONFIGURATION ---
 ADMIN_PASSWORD = "admin"
@@ -117,6 +165,9 @@ SAMPLE_SIZE = 100    # Number of random sentences loaded per login session
 # 4. State Initialization
 if "scores" not in st.session_state:
     st.session_state.scores = load_scores()
+
+if "show_warning" not in st.session_state:
+    st.session_state.show_warning = False
 
 if "session_indices" not in st.session_state and total_sentences > 0:
     # Randomly sample SAMPLE_SIZE sentences for this session
@@ -142,33 +193,45 @@ if "shuffled_candidates" not in st.session_state:
 
 # 5. Session State Navigation Functions
 def next_sentence():
-    if "session_indices" in st.session_state and st.session_state.index_ptr < len(st.session_state.session_indices) - 1:
-        st.session_state.index_ptr += 1
-        db_idx = st.session_state.session_indices[st.session_state.index_ptr]
-        st.session_state.shuffled_candidates.pop(db_idx, None)
+    if "session_indices" not in st.session_state:
+        return
+    ptr = st.session_state.index_ptr
+    db_idx = st.session_state.session_indices[ptr]
+    existing_scores = st.session_state.scores.get(str(db_idx), {})
+    
+    # Check if all candidates are rated
+    all_rated = all(existing_scores.get(k) is not None for k in candidate_keys)
+    
+    if all_rated:
+        if st.session_state.index_ptr < len(st.session_state.session_indices) - 1:
+            st.session_state.index_ptr += 1
+            new_db_idx = st.session_state.session_indices[st.session_state.index_ptr]
+            st.session_state.shuffled_candidates.pop(new_db_idx, None)
+        st.session_state.show_warning = False
+    else:
+        st.session_state.show_warning = True
 
 def prev_sentence():
     if "session_indices" in st.session_state and st.session_state.index_ptr > 0:
         st.session_state.index_ptr -= 1
         db_idx = st.session_state.session_indices[st.session_state.index_ptr]
         st.session_state.shuffled_candidates.pop(db_idx, None)
+    st.session_state.show_warning = False
 
 def go_to_ptr(ptr):
     if "session_indices" in st.session_state and 0 <= ptr < len(st.session_state.session_indices):
         st.session_state.index_ptr = ptr
         db_idx = st.session_state.session_indices[ptr]
         st.session_state.shuffled_candidates.pop(db_idx, None)
+    st.session_state.show_warning = False
 
 # Main structure
-st.markdown("<h3 style='text-align: center; margin-top: -30px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; margin-top: -0px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
 
 if total_sentences == 0:
     st.info("Please make sure `central_database.json` contains valid sentence objects and is in the same directory.")
 else:
-    # Get model candidate keys dynamically from the first record
-    # Exclude source and reference
-    first_record = database[0]
-    candidate_keys = [k for k in first_record.keys() if k not in ["source", "reference"]]
+    # Check if admin is active via query parameter or passcode input
 
     # Check if admin is active via query parameter or passcode input
     is_admin_query = st.query_params.get("admin") == ADMIN_PASSWORD
@@ -291,6 +354,9 @@ else:
         with col_next:
             st.button("Next ⏭️", on_click=next_sentence, disabled=(ptr == session_size - 1), use_container_width=True)
 
+        if st.session_state.get("show_warning", False):
+            st.error("⚠️ Please rate all candidate sentences before moving to the next one!")
+
         # Rating Guidelines Expander
         with st.expander("📖 View Rating Guidelines & Dimensions", expanded=False):
             st.markdown("""
@@ -310,14 +376,14 @@ else:
             st.markdown(f"""
             <div class="source-container">
                 <div class="container-title" style="color: #FF9800;">Source Sentence</div>
-                <div>{current_item.get('source', '')}</div>
+                <div>{escape_html_display(current_item.get('source', ''))}</div>
             </div>
             """, unsafe_allow_html=True)
         with col_ref:
             st.markdown(f"""
             <div class="reference-container">
                 <div class="container-title" style="color: #4CAF50;">Reference Sentence</div>
-                <div>{current_item.get('reference', '')}</div>
+                <div>{escape_html_display(current_item.get('reference', ''))}</div>
             </div>
             """, unsafe_allow_html=True)
             
@@ -337,41 +403,63 @@ else:
         # Retrieve existing scores for the current sentence
         existing_item_scores = st.session_state.scores.get(str(db_idx), {})
         
-        # Column headers for Candidate and Score
+        # Column headers for Candidate and Score columns
         col_hdr_left, col_hdr_right = st.columns([7, 3], gap="medium")
         with col_hdr_left:
             st.markdown("<span style='font-size: 0.9rem; font-weight: bold; color: var(--text-color);'>🔍 Candidate Sentences</span>", unsafe_allow_html=True)
         with col_hdr_right:
-            st.markdown("<div style='text-align: right; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📈 Score: 1-10 (Higher is Better)</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📊 Score (1-10)</div>", unsafe_allow_html=True)
 
         # Render candidate rows inside standard bordered containers for absolute vertical alignment
+        options_low = [1, 2, 3, 4, 5]
+        options_high = [6, 7, 8, 9, 10]
+        
         updated_item_scores = {}
         for rank, key in enumerate(display_order):
             candidate_text = current_item.get(key, "*(empty)*")
             display_name = f"Candidate {chr(65 + rank)}" if BLIND_RATING else f"Model: {key}"
             existing_score = existing_item_scores.get(key, None)
             
+            # Setup session state keys for low and high widgets if not already present
+            low_key = f"radio_low_{db_idx}_{key}"
+            high_key = f"radio_high_{db_idx}_{key}"
+            
+            if low_key not in st.session_state:
+                st.session_state[low_key] = existing_score if existing_score in options_low else None
+            if high_key not in st.session_state:
+                st.session_state[high_key] = existing_score if existing_score in options_high else None
+                
             with st.container(border=True):
                 col_text, col_rating = st.columns([7, 3], gap="medium")
                 with col_text:
                     st.markdown(f"<div class='container-title' style='color: #2196F3; margin-bottom: 2px;'>{display_name}</div>", unsafe_allow_html=True)
-                    st.write(candidate_text)
+                    st.markdown(escape_html_display(candidate_text), unsafe_allow_html=True)
                 with col_rating:
-                    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
-                    
-                    # Convert existing score to 0-based index in options [1..10]
-                    options = list(range(1, 11))
-                    default_index = options.index(existing_score) if existing_score in options else None
-                    
-                    score = st.radio(
-                        label=f"Rate {display_name}",
-                        options=options,
-                        index=default_index, # Supports None (unselected state)
+                    score_low = st.radio(
+                        label=f"Rate Low {display_name}",
+                        options=options_low,
+                        index=options_low.index(st.session_state[low_key]) if st.session_state[low_key] in options_low else None,
                         horizontal=True,
-                        key=f"radio_{db_idx}_{key}",
+                        key=low_key,
+                        on_change=on_change_low,
+                        args=(db_idx, key),
                         label_visibility="collapsed"
                     )
-                    updated_item_scores[key] = score
+                    score_high = st.radio(
+                        label=f"Rate High {display_name}",
+                        options=options_high,
+                        index=options_high.index(st.session_state[high_key]) if st.session_state[high_key] in options_high else None,
+                        horizontal=True,
+                        key=high_key,
+                        on_change=on_change_high,
+                        args=(db_idx, key),
+                        label_visibility="collapsed"
+                    )
+            
+            # Get combined score
+            val_low = st.session_state.get(low_key)
+            val_high = st.session_state.get(high_key)
+            updated_item_scores[key] = val_low if val_low is not None else val_high
 
         # Save scores on change
         if str(db_idx) not in st.session_state.scores or st.session_state.scores[str(db_idx)] != updated_item_scores:
