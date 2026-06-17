@@ -15,38 +15,46 @@ st.set_page_config(
 # Custom clean CSS styles for a polished and minimal look
 st.markdown("""
 <style>
+    /* Reduce Streamlit's default page top/bottom padding */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        padding-left: 2rem !important;
+        padding-right: 2rem !important;
+    }
+    
     /* Clean container labels */
     .container-title {
         font-weight: 700;
         font-size: 0.85rem;
         text-transform: uppercase;
-        margin-bottom: 6px;
+        margin-bottom: 4px;
         letter-spacing: 0.5px;
     }
     
-    /* Left-bordered container cards */
+    /* Left-bordered container cards with compact spacing */
     .source-container {
         border-left: 5px solid #FF9800;
         background-color: var(--secondary-background-color);
-        padding: 10px 14px;
+        padding: 8px 12px;
         border-radius: 4px 8px 8px 4px;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
     }
     
     .reference-container {
         border-left: 5px solid #4CAF50;
         background-color: var(--secondary-background-color);
-        padding: 10px 14px;
+        padding: 8px 12px;
         border-radius: 4px 8px 8px 4px;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
     }
     
     .candidate-container {
         border-left: 5px solid #2196F3;
         background-color: var(--secondary-background-color);
-        padding: 10px 14px;
+        padding: 8px 12px;
         border-radius: 4px 8px 8px 4px;
-        margin-bottom: 10px;
+        margin-bottom: 6px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -143,7 +151,7 @@ def go_to_ptr(ptr):
         st.session_state.shuffled_candidates.pop(db_idx, None)
 
 # Main structure
-st.markdown("<h3 style='text-align: center; margin-top: -50px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; margin-top: -70px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
 
 if total_sentences == 0:
     st.info("Please make sure `central_database.json` contains valid sentence objects and is in the same directory.")
@@ -310,18 +318,18 @@ else:
                 st.markdown(f"""
                 <div class="candidate-container">
                     <div class="container-title" style="color: #2196F3;">{display_name}</div>
-                    <div style="font-weight: 500;">{candidate_text}</div>
+                    <div style="font-weight: 500; font-size: 0.95rem; line-height: 1.4;">{candidate_text}</div>
                 </div>
                 """, unsafe_allow_html=True)
             with col_slider:
-                st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
                 score = st.slider(
-                    label="Score (0-10):",
+                    label=f"Score for {display_name}",
                     min_value=0,
                     max_value=10,
                     value=default_val,
                     step=1,
                     key=f"slider_{db_idx}_{key}",
+                    label_visibility="collapsed"
                 )
                 updated_item_scores[key] = score
 
