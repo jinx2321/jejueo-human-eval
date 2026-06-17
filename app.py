@@ -68,21 +68,32 @@ def save_scores(scores):
 database = load_database()
 total_sentences = len(database)
 
+# --- BACKEND CONFIGURATION ---
+ADMIN_PASSWORD = "admin"
+BLIND_RATING = True  # Hide model names and randomize candidate display order
+SAMPLE_SIZE = 100    # Number of random sentences loaded per login session
+
 # 4. State Initialization
 if "scores" not in st.session_state:
     st.session_state.scores = load_scores()
 
-if "index" not in st.session_state:
-    # Set to first unrated sentence or 0
-    st.session_state.index = 0
-    for idx in range(total_sentences):
-        if str(idx) not in st.session_state.scores:
-            st.session_state.index = idx
+if "session_indices" not in st.session_state and total_sentences > 0:
+    # Randomly sample SAMPLE_SIZE sentences for this session
+    sample_count = min(SAMPLE_SIZE, total_sentences)
+    st.session_state.session_indices = random.sample(range(total_sentences), sample_count)
+    
+    # Set index pointer to first unrated sentence in this sample list, or 0
+    st.session_state.index_ptr = 0
+    for ptr, db_idx in enumerate(st.session_state.session_indices):
+        if str(db_idx) not in st.session_state.scores:
+            st.session_state.index_ptr = ptr
             break
 
-# Ensure index is within range
-if total_sentences > 0:
-    st.session_state.index = max(0, min(st.session_state.index, total_sentences - 1))
+# Ensure index pointer is valid
+if "session_indices" in st.session_state and len(st.session_state.session_indices) > 0:
+    st.session_state.index_ptr = max(0, min(st.session_state.index_ptr, len(st.session_state.session_indices) - 1))
+else:
+    st.session_state.index_ptr = 0
 
 # Keep track of randomized orders for blind scoring to prevent rerendering shuffle on slider click
 if "shuffled_candidates" not in st.session_state:
@@ -90,23 +101,25 @@ if "shuffled_candidates" not in st.session_state:
 
 # 5. Session State Navigation Functions
 def next_sentence():
-    if st.session_state.index < total_sentences - 1:
-        st.session_state.index += 1
-        # Clear specific shuffle cache for new index
-        st.session_state.shuffled_candidates.pop(st.session_state.index, None)
+    if "session_indices" in st.session_state and st.session_state.index_ptr < len(st.session_state.session_indices) - 1:
+        st.session_state.index_ptr += 1
+        db_idx = st.session_state.session_indices[st.session_state.index_ptr]
+        st.session_state.shuffled_candidates.pop(db_idx, None)
 
 def prev_sentence():
-    if st.session_state.index > 0:
-        st.session_state.index -= 1
-        # Clear specific shuffle cache for new index
-        st.session_state.shuffled_candidates.pop(st.session_state.index, None)
+    if "session_indices" in st.session_state and st.session_state.index_ptr > 0:
+        st.session_state.index_ptr -= 1
+        db_idx = st.session_state.session_indices[st.session_state.index_ptr]
+        st.session_state.shuffled_candidates.pop(db_idx, None)
 
-def go_to_index(idx):
-    st.session_state.index = idx
-    st.session_state.shuffled_candidates.pop(idx, None)
+def go_to_ptr(ptr):
+    if "session_indices" in st.session_state and 0 <= ptr < len(st.session_state.session_indices):
+        st.session_state.index_ptr = ptr
+        db_idx = st.session_state.session_indices[ptr]
+        st.session_state.shuffled_candidates.pop(db_idx, None)
 
 # Main structure
-st.title("📝 LLM Sentence Quality Scorer")
+st.markdown("<h3 style='text-align: center; margin-top: 5px; margin-bottom: 15px; font-weight: bold;'>📝 LLM Sentence Scorer</h3>", unsafe_allow_html=True)
 
 if total_sentences == 0:
     st.info("Please make sure `central_database.json` contains valid sentence objects and is in the same directory.")
@@ -116,9 +129,6 @@ else:
     first_record = database[0]
     candidate_keys = [k for k in first_record.keys() if k not in ["source", "reference"]]
 
-    # 5. Access Control Configuration
-    ADMIN_PASSWORD = "admin"  # Change this to your desired admin passcode
-    
     # Check if admin is active via query parameter or passcode input
     is_admin_query = st.query_params.get("admin") == ADMIN_PASSWORD
 
@@ -142,36 +152,33 @@ else:
         
         st.markdown("---")
         
-        # Blind rating toggle
-        blind_rating = st.checkbox(
-            "🙈 Blind Rating", 
-            value=True, 
-            help="Hide model names and randomize candidate display order to prevent scoring bias."
-        )
+        # Scoring Progress in current session
+        session_size = len(st.session_state.session_indices)
+        session_rated_count = sum(1 for db_idx in st.session_state.session_indices if str(db_idx) in st.session_state.scores)
+        session_completion_pct = (session_rated_count / session_size) * 100 if session_size > 0 else 0
         
-        st.markdown("---")
+        st.subheader("Session Progress")
+        st.write(f"Rated: **{session_rated_count}** / {session_size} ({session_completion_pct:.1f}%)")
+        st.progress(session_completion_pct / 100.0)
         
-        # Scoring Progress
-        rated_count = len(st.session_state.scores)
-        completion_pct = (rated_count / total_sentences) * 100 if total_sentences > 0 else 0
+        # Overall progress
+        overall_rated_count = len(st.session_state.scores)
+        overall_completion_pct = (overall_rated_count / total_sentences) * 100 if total_sentences > 0 else 0
+        st.caption(f"Total Rated Overall: **{overall_rated_count}** / {total_sentences} ({overall_completion_pct:.1f}%)")
         
-        st.subheader("📈 Progress Summary")
-        st.write(f"Rated: **{rated_count}** / {total_sentences} ({completion_pct:.1f}%)")
-        st.progress(completion_pct / 100.0)
-        
-        # Jump to sentence dropdown
+        # Jump to sentence dropdown (session scope)
         st.markdown("---")
         st.subheader("🎯 Quick Navigation")
-        jump_options = {f"Sentence {i}": i for i in range(total_sentences)}
+        jump_options = {f"Sentence {i+1}": i for i in range(session_size)}
         selected_jump = st.selectbox(
             "Jump to Sentence:", 
             options=list(jump_options.keys()), 
-            index=st.session_state.index,
+            index=st.session_state.index_ptr,
             label_visibility="collapsed"
         )
-        target_idx = jump_options[selected_jump]
-        if target_idx != st.session_state.index:
-            go_to_index(target_idx)
+        target_ptr = jump_options[selected_jump]
+        if target_ptr != st.session_state.index_ptr:
+            go_to_ptr(target_ptr)
             st.rerun()
 
         # Save and Download Panel - ONLY shown to admin
@@ -222,82 +229,80 @@ else:
     
     # Mode 1: Rating Interface
     if app_mode == "📝 Rate Sentences":
-        idx = st.session_state.index
-        current_item = database[idx]
+        ptr = st.session_state.index_ptr
+        db_idx = st.session_state.session_indices[ptr]
+        current_item = database[db_idx]
+        session_size = len(st.session_state.session_indices)
         
-        # Navigation buttons layout
+        # Navigation buttons layout - compact text size
         col_prev, col_num, col_next = st.columns([1, 2, 1])
         with col_prev:
-            st.button("⏮️ Previous", on_click=prev_sentence, disabled=(idx == 0), use_container_width=True)
+            st.button("⏮️ Previous", on_click=prev_sentence, disabled=(ptr == 0), use_container_width=True)
         with col_num:
-            st.markdown(f"<h3 style='text-align: center; margin:0;'>Sentence {idx + 1} of {total_sentences}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.1rem; margin-top: 5px;'>Sentence {ptr + 1} / {session_size} (Database ID: #{db_idx})</div>", unsafe_allow_html=True)
         with col_next:
-            st.button("Next ⏭️", on_click=next_sentence, disabled=(idx == total_sentences - 1), use_container_width=True)
+            st.button("Next ⏭️", on_click=next_sentence, disabled=(ptr == session_size - 1), use_container_width=True)
             
         # Display Source & Reference in clean containers
         col_src, col_ref = st.columns(2)
         with col_src:
             with st.container(border=True):
-                st.markdown("<div class='container-title'>Source Sentence</div>", unsafe_allow_html=True)
+                st.markdown("<div class='container-title' style='margin-bottom:2px;'>Source Sentence</div>", unsafe_allow_html=True)
                 st.write(current_item.get('source', ''))
         with col_ref:
             with st.container(border=True):
-                st.markdown("<div class='container-title'>Reference Sentence</div>", unsafe_allow_html=True)
+                st.markdown("<div class='container-title' style='margin-bottom:2px;'>Reference Sentence</div>", unsafe_allow_html=True)
                 st.write(current_item.get('reference', ''))
             
-        st.markdown("---")
-        st.subheader("🔍 Rate the Candidates")
-        st.caption("Please rate each candidate from **0** (worst) to **10** (best).")
+        st.markdown("<hr style='margin:10px 0;' />", unsafe_allow_html=True)
 
         # Stable shuffle management for Blind Rating
-        if blind_rating:
-            if idx not in st.session_state.shuffled_candidates:
+        if BLIND_RATING:
+            if db_idx not in st.session_state.shuffled_candidates:
                 # Shuffle the keys for this index and save them
                 shuffled_keys = candidate_keys.copy()
                 random.shuffle(shuffled_keys)
-                st.session_state.shuffled_candidates[idx] = shuffled_keys
-            display_order = st.session_state.shuffled_candidates[idx]
+                st.session_state.shuffled_candidates[db_idx] = shuffled_keys
+            display_order = st.session_state.shuffled_candidates[db_idx]
         else:
             display_order = candidate_keys
 
         # Retrieve existing scores for the current sentence
-        existing_item_scores = st.session_state.scores.get(str(idx), {})
+        existing_item_scores = st.session_state.scores.get(str(db_idx), {})
         
-        # Render candidate cards and sliders
+        # Render candidate rows using a highly space-efficient split column layout
         updated_item_scores = {}
         for rank, key in enumerate(display_order):
             candidate_text = current_item.get(key, "*(empty)*")
-            
-            # Label according to mode
-            display_name = f"Candidate {chr(65 + rank)}" if blind_rating else f"Model: {key}"
-            
-            # Default value
+            display_name = f"Candidate {chr(65 + rank)}" if BLIND_RATING else f"Model: {key}"
             default_val = existing_item_scores.get(key, 5) # Default score is 5
             
-            # Styled Card for Candidate
+            # Render each candidate row side-by-side: left for text, right for slider
             with st.container(border=True):
-                st.markdown(f"<div class='container-title'>{display_name}</div>", unsafe_allow_html=True)
-                st.write(candidate_text)
-                
-                # Rating slider
-                score = st.slider(
-                    label="Score (0-10):",
-                    min_value=0,
-                    max_value=10,
-                    value=default_val,
-                    step=1,
-                    key=f"slider_{idx}_{key}",
-                )
-                updated_item_scores[key] = score
+                col_text, col_slider = st.columns([5, 2])
+                with col_text:
+                    st.markdown(f"<div class='container-title' style='margin-bottom: 2px;'>{display_name}</div>", unsafe_allow_html=True)
+                    st.write(candidate_text)
+                with col_slider:
+                    score = st.slider(
+                        label="Score (0-10):",
+                        min_value=0,
+                        max_value=10,
+                        value=default_val,
+                        step=1,
+                        key=f"slider_{db_idx}_{key}",
+                        label_visibility="visible"
+                    )
+                    updated_item_scores[key] = score
 
         # Save scores on change
-        if str(idx) not in st.session_state.scores or st.session_state.scores[str(idx)] != updated_item_scores:
-            st.session_state.scores[str(idx)] = updated_item_scores
+        if str(db_idx) not in st.session_state.scores or st.session_state.scores[str(db_idx)] != updated_item_scores:
+            st.session_state.scores[str(db_idx)] = updated_item_scores
             save_scores(st.session_state.scores)
             st.toast("Progress Saved Automatically!", icon="💾")
 
-        # Quick Save indicator
-        st.success(f"Sentence {idx + 1} rating saved! Current score mapping: { {k: v for k, v in updated_item_scores.items()} }")
+        # Quick Save indicator - compact format
+        st.caption(f"✓ Autosaved Sentence #{db_idx} rating: { {k: v for k, v in updated_item_scores.items()} }")
 
     # Mode 2: Analytics Dashboard
     elif app_mode == "📊 Analytics Dashboard":
