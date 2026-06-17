@@ -96,3 +96,9 @@ ActiveState.venv/
 # Streamlit
 .streamlit/
 .streamlit/config.toml
+
+# Local data & evaluations
+scores.json
+*.csv
+*.json
+!central_database.json

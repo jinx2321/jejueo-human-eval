@@ -12,58 +12,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom premium CSS styling using Streamlit variables for light/dark mode compatibility
+# Custom clean CSS styles for a polished and minimal look
 st.markdown("""
 <style>
-    /* Card Styles */
-    .custom-card {
-        background-color: var(--secondary-background-color);
-        color: var(--text-color);
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04);
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .custom-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
-        border-color: var(--primary-color);
-    }
-    .card-label {
+    /* Clean container labels */
+    .container-title {
         font-weight: 700;
-        color: var(--primary-color);
         font-size: 0.85rem;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        color: var(--primary-color);
         margin-bottom: 8px;
-    }
-    .card-content {
-        font-size: 1.1rem;
-        line-height: 1.6;
-    }
-    
-    /* Navigation Bar styling */
-    .nav-container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 10px;
-        margin-bottom: 20px;
-        padding: 10px;
-        background-color: rgba(128, 128, 128, 0.05);
-        border-radius: 8px;
-    }
-    
-    /* Title Styling */
-    h1 {
-        font-family: 'Outfit', 'Inter', sans-serif;
-        font-weight: 800;
-    }
-    h2, h3 {
-        font-family: 'Outfit', 'Inter', sans-serif;
-        font-weight: 600;
+        letter-spacing: 0.5px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -157,12 +116,29 @@ else:
     first_record = database[0]
     candidate_keys = [k for k in first_record.keys() if k not in ["source", "reference"]]
 
+    # 5. Access Control Configuration
+    ADMIN_PASSWORD = "admin"  # Change this to your desired admin passcode
+    
+    # Check if admin is active via query parameter or passcode input
+    is_admin_query = st.query_params.get("admin") == ADMIN_PASSWORD
+
     # --- SIDEBAR CONTROL PANEL ---
     with st.sidebar:
         st.header("⚙️ Control Panel")
         
-        # Navigation mode
-        app_mode = st.radio("App Mode", ["📝 Rate Sentences", "📊 Analytics Dashboard", "🔍 Browse Database"])
+        # Admin Access Passcode
+        st.subheader("🔑 Admin Access")
+        admin_passcode = st.text_input("Enter Passcode:", type="password", help="Enter passcode to unlock evaluation dashboard and export tools.")
+        is_admin = is_admin_query or (admin_passcode == ADMIN_PASSWORD)
+        
+        st.markdown("---")
+        
+        # Determine mode and show options based on admin status
+        if is_admin:
+            app_mode = st.radio("App Mode", ["📝 Rate Sentences", "📊 Analytics Dashboard", "🔍 Browse Database"])
+        else:
+            app_mode = "📝 Rate Sentences"
+            st.info("🔒 Enter the admin passcode to access the Analytics Dashboard and Export features.")
         
         st.markdown("---")
         
@@ -198,49 +174,49 @@ else:
             go_to_index(target_idx)
             st.rerun()
 
-        # Save and Download Panel
-        st.markdown("---")
-        st.subheader("💾 Export & Data Management")
-        
-        # Download JSON
-        json_scores = json.dumps(st.session_state.scores, indent=2, ensure_ascii=False)
-        st.download_button(
-            label="📥 Download Scores (JSON)",
-            data=json_scores,
-            file_name="llm_scores.json",
-            mime="application/json",
-            use_container_width=True
-        )
-        
-        # Download CSV
-        if st.session_state.scores:
-            rows = []
-            for idx, model_scores in st.session_state.scores.items():
-                row = {"index": int(idx)}
-                row.update(model_scores)
-                # Include source and reference text if index in database bounds
-                i = int(idx)
-                if i < len(database):
-                    row["source"] = database[i].get("source", "")
-                    row["reference"] = database[i].get("reference", "")
-                rows.append(row)
-            df_export = pd.DataFrame(rows)
-            csv_scores = df_export.to_csv(index=False, encoding='utf-8-sig')
+        # Save and Download Panel - ONLY shown to admin
+        if is_admin:
+            st.markdown("---")
+            st.subheader("💾 Export & Data Management")
+            
+            # Download JSON
+            json_scores = json.dumps(st.session_state.scores, indent=2, ensure_ascii=False)
             st.download_button(
-                label="📥 Download Scores (CSV)",
-                data=csv_scores,
-                file_name="llm_scores.csv",
-                mime="text/csv",
+                label="📥 Download Scores (JSON)",
+                data=json_scores,
+                file_name="llm_scores.json",
+                mime="application/json",
                 use_container_width=True
             )
-        
-        # Reset ratings
-        st.markdown("<br><br>", unsafe_allow_html=True)
-        if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
-            st.session_state.scores = {}
-            save_scores({})
-            st.toast("All scores have been reset!", icon="✅")
-            st.rerun()
+            
+            # Download CSV
+            if st.session_state.scores:
+                rows = []
+                for idx, model_scores in st.session_state.scores.items():
+                    row = {"index": int(idx)}
+                    row.update(model_scores)
+                    i = int(idx)
+                    if i < len(database):
+                        row["source"] = database[i].get("source", "")
+                        row["reference"] = database[i].get("reference", "")
+                    rows.append(row)
+                df_export = pd.DataFrame(rows)
+                csv_scores = df_export.to_csv(index=False, encoding='utf-8-sig')
+                st.download_button(
+                    label="📥 Download Scores (CSV)",
+                    data=csv_scores,
+                    file_name="llm_scores.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+            
+            # Reset ratings
+            st.markdown("<br><br>", unsafe_allow_html=True)
+            if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
+                st.session_state.scores = {}
+                save_scores({})
+                st.toast("All scores have been reset!", icon="✅")
+                st.rerun()
 
     # --- MAIN CONTENT AREA ---
     
@@ -258,26 +234,20 @@ else:
         with col_next:
             st.button("Next ⏭️", on_click=next_sentence, disabled=(idx == total_sentences - 1), use_container_width=True)
             
-        # Display Source & Reference in beautiful cards
+        # Display Source & Reference in clean containers
         col_src, col_ref = st.columns(2)
         with col_src:
-            st.markdown(f"""
-            <div class="custom-card">
-                <div class="card-label">Source Sentence</div>
-                <div class="card-content">{current_item.get('source', '')}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown("<div class='container-title'>Source Sentence</div>", unsafe_allow_html=True)
+                st.write(current_item.get('source', ''))
         with col_ref:
-            st.markdown(f"""
-            <div class="custom-card">
-                <div class="card-label">Reference Sentence</div>
-                <div class="card-content">{current_item.get('reference', '')}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown("<div class='container-title'>Reference Sentence</div>", unsafe_allow_html=True)
+                st.write(current_item.get('reference', ''))
             
         st.markdown("---")
         st.subheader("🔍 Rate the Candidates")
-        st.caption("Please rate each candidate translation/paraphrase from **0** (worst) to **10** (best).")
+        st.caption("Please rate each candidate from **0** (worst) to **10** (best).")
 
         # Stable shuffle management for Blind Rating
         if blind_rating:
@@ -299,32 +269,26 @@ else:
             candidate_text = current_item.get(key, "*(empty)*")
             
             # Label according to mode
-            display_name = f"Candidate {chr(65 + rank)}" if blind_rating else f"Model: **{key}**"
+            display_name = f"Candidate {chr(65 + rank)}" if blind_rating else f"Model: {key}"
             
             # Default value
             default_val = existing_item_scores.get(key, 5) # Default score is 5
             
             # Styled Card for Candidate
-            with st.container():
-                st.markdown(f"""
-                <div class="custom-card" style="margin-bottom: 5px;">
-                    <div class="card-label">{display_name}</div>
-                    <div class="card-content">{candidate_text}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown(f"<div class='container-title'>{display_name}</div>", unsafe_allow_html=True)
+                st.write(candidate_text)
                 
                 # Rating slider
                 score = st.slider(
-                    label=f"Rate {display_name if blind_rating else key}",
+                    label="Score (0-10):",
                     min_value=0,
                     max_value=10,
                     value=default_val,
                     step=1,
                     key=f"slider_{idx}_{key}",
-                    label_visibility="collapsed"
                 )
                 updated_item_scores[key] = score
-                st.markdown("<br>", unsafe_allow_html=True)
 
         # Save scores on change
         if str(idx) not in st.session_state.scores or st.session_state.scores[str(idx)] != updated_item_scores:
@@ -411,9 +375,9 @@ else:
             disagreement.columns = ["Sentence Index", "Score StdDev"]
             top_disagreement = disagreement.sort_values(by="Score StdDev", ascending=False).head(5)
             
-            for rank, row in enumerate(top_disagreement.itertuples()):
-                s_idx = int(row.Sentence_Index)
-                std_val = row.Score_StdDev
+            for rank, (_, row) in enumerate(top_disagreement.iterrows()):
+                s_idx = int(row["Sentence Index"])
+                std_val = row["Score StdDev"]
                 item = database[s_idx]
                 item_ratings = st.session_state.scores.get(str(s_idx), {})
                 
