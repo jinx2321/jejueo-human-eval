@@ -70,6 +70,14 @@ st.markdown("""
     div[data-testid="column"] div[data-testid="element-container"] + div[data-testid="element-container"] div[data-testid="stRadio"] {
         margin-top: -18px !important;
     }
+    
+    /* Right-align and set fixed-width for horizontal radio buttons to keep them neatly aligned */
+    div[data-testid="column"] div[data-testid="stRadio"] > div[role="radiogroup"] {
+        max-width: 280px;
+        margin-left: auto !important;
+        margin-right: 15px !important;
+        justify-content: space-between !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -409,11 +417,11 @@ else:
         existing_item_scores = st.session_state.scores.get(str(db_idx), {})
         
         # Column headers for Candidate and Score columns
-        col_hdr_left, col_hdr_right = st.columns([7, 3], gap="medium")
+        col_hdr_left, col_hdr_right = st.columns([6.5, 3.5], gap="medium")
         with col_hdr_left:
             st.markdown("<span style='font-size: 0.9rem; font-weight: bold; color: var(--text-color);'>🔍 Candidate Sentences</span>", unsafe_allow_html=True)
         with col_hdr_right:
-            st.markdown("<div style='text-align: center; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📊 Score (1-10), higher is better</div>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: right; padding-right: 15px; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📊 Score (1-10), higher is better</div>", unsafe_allow_html=True)
 
         # Render candidate rows inside standard bordered containers for absolute vertical alignment
         options_low = [1, 2, 3, 4, 5]
@@ -435,7 +443,7 @@ else:
                 st.session_state[high_key] = existing_score if existing_score in options_high else None
                 
             with st.container(border=True):
-                col_text, col_rating = st.columns([7, 3], gap="medium")
+                col_text, col_rating = st.columns([6.5, 3.5], gap="medium")
                 with col_text:
                     st.markdown(f"<div class='container-title' style='color: #2196F3; margin-bottom: 2px;'>{display_name}</div>", unsafe_allow_html=True)
                     st.markdown(escape_html_display(candidate_text), unsafe_allow_html=True)
