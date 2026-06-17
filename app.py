@@ -15,10 +15,10 @@ st.set_page_config(
 # Custom clean CSS styles for a polished and minimal look
 st.markdown("""
 <style>
-    /* Reduce Streamlit's default page top/bottom padding */
+    /* Adjust Streamlit's default page top/bottom padding to look balanced */
     .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
+        padding-top: 5rem !important;
+        padding-bottom: 1.5rem !important;
         padding-left: 2rem !important;
         padding-right: 2rem !important;
     }
@@ -151,7 +151,7 @@ def go_to_ptr(ptr):
         st.session_state.shuffled_candidates.pop(db_idx, None)
 
 # Main structure
-st.markdown("<h3 style='text-align: center; margin-top: -70px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; margin-top: -30px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
 
 if total_sentences == 0:
     st.info("Please make sure `central_database.json` contains valid sentence objects and is in the same directory.")
