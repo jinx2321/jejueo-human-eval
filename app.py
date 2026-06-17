@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import json
 import os
 import pandas as pd
@@ -17,7 +18,7 @@ st.markdown("""
 <style>
     /* Adjust Streamlit's default page top/bottom padding to look balanced */
     .block-container {
-        padding-top: 5rem !important;
+        padding-top: 2.5rem !important;
         padding-bottom: 1.5rem !important;
         padding-left: 2rem !important;
         padding-right: 2rem !important;
@@ -55,6 +56,14 @@ st.markdown("""
         padding: 8px 12px;
         border-radius: 4px 8px 8px 4px;
         margin-bottom: 6px;
+    }
+    
+    /* Disable selection globally to prevent copying core paper corpus */
+    body, .stApp, p, div, span, h1, h2, h3, h4, h5, h6 {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -186,7 +195,14 @@ else:
         
         # Scoring Progress in current session
         session_size = len(st.session_state.session_indices)
-        session_rated_count = sum(1 for db_idx in st.session_state.session_indices if str(db_idx) in st.session_state.scores)
+        session_rated_count = 0
+        for s_idx in st.session_state.session_indices:
+            s_idx_str = str(s_idx)
+            if s_idx_str in st.session_state.scores:
+                scores_dict = st.session_state.scores[s_idx_str]
+                # Count as rated only if all candidate keys have an actual selection (not None)
+                if all(scores_dict.get(k) is not None for k in candidate_keys):
+                    session_rated_count += 1
         session_completion_pct = (session_rated_count / session_size) * 100 if session_size > 0 else 0
         
         st.subheader("Session Progress")
@@ -268,9 +284,25 @@ else:
         with col_prev:
             st.button("⏮️ Previous", on_click=prev_sentence, disabled=(ptr == 0), use_container_width=True)
         with col_num:
-            st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.1rem; margin-top: 5px;'>Sentence {ptr + 1} / {session_size} (Database ID: #{db_idx})</div>", unsafe_allow_html=True)
+            if is_admin:
+                st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.1rem; margin-top: 5px;'>Sentence {ptr + 1} / {session_size} (Database ID: #{db_idx})</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.1rem; margin-top: 5px;'>Sentence {ptr + 1} / {session_size}</div>", unsafe_allow_html=True)
         with col_next:
             st.button("Next ⏭️", on_click=next_sentence, disabled=(ptr == session_size - 1), use_container_width=True)
+
+        # Rating Guidelines Expander
+        with st.expander("📖 View Rating Guidelines & Dimensions", expanded=False):
+            st.markdown("""
+            **Please evaluate the candidate sentences based on the following four dimensions:**
+            
+            1. 🎯 **Faithfulness**: Does the candidate preserve the original meaning of the source sentence without adding, omitting, or distorting key information?
+            2. ✍️ **Grammaticality**: Is the candidate grammatically correct, fluent, natural, and free of syntax errors?
+            3. 🔄 **Syntactic Structuring**: Does the candidate restructure the syntax of the source sentence instead of just copying the grammatical frame?
+            4. 🔀 **Lexical Diversity**: Does the candidate use diverse vocabulary and synonyms rather than repeating the exact words of the source sentence?
+            
+            *Score range is **1** (worst) to **10** (best).*
+            """)
             
         # Display Source & Reference in clean containers
         col_src, col_ref = st.columns(2)
@@ -305,33 +337,41 @@ else:
         # Retrieve existing scores for the current sentence
         existing_item_scores = st.session_state.scores.get(str(db_idx), {})
         
-        # Render candidate rows using a highly space-efficient split column layout
+        # Column headers for Candidate and Score
+        col_hdr_left, col_hdr_right = st.columns([7, 3], gap="medium")
+        with col_hdr_left:
+            st.markdown("<span style='font-size: 0.9rem; font-weight: bold; color: var(--text-color);'>🔍 Candidate Sentences</span>", unsafe_allow_html=True)
+        with col_hdr_right:
+            st.markdown("<div style='text-align: right; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📈 Score: 1-10 (Higher is Better)</div>", unsafe_allow_html=True)
+
+        # Render candidate rows inside standard bordered containers for absolute vertical alignment
         updated_item_scores = {}
         for rank, key in enumerate(display_order):
             candidate_text = current_item.get(key, "*(empty)*")
             display_name = f"Candidate {chr(65 + rank)}" if BLIND_RATING else f"Model: {key}"
-            default_val = existing_item_scores.get(key, 5) # Default score is 5
+            existing_score = existing_item_scores.get(key, None)
             
-            # Render each candidate row side-by-side: left for text, right for slider
-            col_text, col_slider = st.columns([6, 2], gap="medium")
-            with col_text:
-                st.markdown(f"""
-                <div class="candidate-container">
-                    <div class="container-title" style="color: #2196F3;">{display_name}</div>
-                    <div style="font-weight: 500; font-size: 0.95rem; line-height: 1.4;">{candidate_text}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            with col_slider:
-                score = st.slider(
-                    label=f"Score for {display_name}",
-                    min_value=0,
-                    max_value=10,
-                    value=default_val,
-                    step=1,
-                    key=f"slider_{db_idx}_{key}",
-                    label_visibility="collapsed"
-                )
-                updated_item_scores[key] = score
+            with st.container(border=True):
+                col_text, col_rating = st.columns([7, 3], gap="medium")
+                with col_text:
+                    st.markdown(f"<div class='container-title' style='color: #2196F3; margin-bottom: 2px;'>{display_name}</div>", unsafe_allow_html=True)
+                    st.write(candidate_text)
+                with col_rating:
+                    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+                    
+                    # Convert existing score to 0-based index in options [1..10]
+                    options = list(range(1, 11))
+                    default_index = options.index(existing_score) if existing_score in options else None
+                    
+                    score = st.radio(
+                        label=f"Rate {display_name}",
+                        options=options,
+                        index=default_index, # Supports None (unselected state)
+                        horizontal=True,
+                        key=f"radio_{db_idx}_{key}",
+                        label_visibility="collapsed"
+                    )
+                    updated_item_scores[key] = score
 
         # Save scores on change
         if str(db_idx) not in st.session_state.scores or st.session_state.scores[str(db_idx)] != updated_item_scores:
@@ -339,8 +379,14 @@ else:
             save_scores(st.session_state.scores)
             st.toast("Progress Saved Automatically!", icon="💾")
 
-        # Quick Save indicator - compact format
-        st.caption(f"✓ Autosaved Sentence #{db_idx} rating: { {k: v for k, v in updated_item_scores.items()} }")
+        # Quick Save indicator - compact format, hiding index and detailed scores from normal users to prevent leak
+        if is_admin:
+            st.caption(f"✓ Autosaved Sentence #{db_idx} rating: { {k: v for k, v in updated_item_scores.items()} }")
+        else:
+            if all(v is not None for v in updated_item_scores.values()):
+                st.caption("✓ All candidates rated. Progress autosaved.")
+            else:
+                st.caption("ℹ Please rate all candidates above to complete this sentence.")
 
     # Mode 2: Analytics Dashboard
     elif app_mode == "📊 Analytics Dashboard":
@@ -483,3 +529,36 @@ else:
             
         st.write(f"Showing {len(df_filtered)} records.")
         st.dataframe(df_filtered, use_container_width=True, hide_index=True)
+
+    # 6. Copy Prevention Script
+    components.html("""
+    <script>
+        try {
+            // Prevent context menu (right-click) on parent window
+            window.parent.document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+            });
+            // Prevent copy event on parent window
+            window.parent.document.addEventListener('copy', function(e) {
+                e.preventDefault();
+            });
+            // Prevent text selection on parent window
+            window.parent.document.body.style.userSelect = 'none';
+            window.parent.document.body.style.webkitUserSelect = 'none';
+            window.parent.document.body.style.msUserSelect = 'none';
+        } catch (e) {
+            console.error("Parent window selection restriction bypassed or inaccessible.");
+        }
+        
+        // Disable within the iframe itself
+        document.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+        });
+        document.addEventListener('copy', function(e) {
+            e.preventDefault();
+        });
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        document.body.style.msUserSelect = 'none';
+    </script>
+    """, height=0)
