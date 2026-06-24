@@ -232,6 +232,7 @@ def mark_slider_touched(db_idx, key):
     if "touched_sliders" not in st.session_state:
         st.session_state.touched_sliders = {}
     st.session_state.touched_sliders[f"{db_idx}_{key}"] = True
+    st.session_state.show_toast = True
 
 def next_sentence():
     if "session_indices" not in st.session_state:
@@ -610,12 +611,10 @@ else:
         if touched_css_rules:
             st.markdown(f"<style>{''.join(touched_css_rules)}</style>", unsafe_allow_html=True)
 
-        # Update local session scores and show toast if changed by user interaction
-        if str(db_idx) not in st.session_state.scores:
-            st.session_state.scores[str(db_idx)] = updated_item_scores
-        elif st.session_state.scores[str(db_idx)] != updated_item_scores:
-            st.session_state.scores[str(db_idx)] = updated_item_scores
+        # Show toast if flag is set
+        if st.session_state.get("show_toast", False):
             st.toast("Rating updated!", icon="💾")
+            st.session_state.show_toast = False
 
         # Quick Save indicator
         if is_admin:
