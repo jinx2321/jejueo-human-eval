@@ -551,7 +551,8 @@ else:
             if slider_key not in st.session_state:
                 st.session_state[slider_key] = existing_score
                 
-            with st.container(border=True):
+            container_key = f"container_{db_idx}_{key}"
+            with st.container(border=True, key=container_key):
                 col_text, col_rating = st.columns([6.5, 3.5], gap="medium")
                 with col_text:
                     st.markdown(f"<div class='container-title' style='color: #2196F3; margin-bottom: 2px;'>{display_name}</div>", unsafe_allow_html=True)
@@ -569,6 +570,45 @@ else:
                         args=(db_idx, key)
                     )
             updated_item_scores[key] = score
+
+        # Collect and inject custom CSS for touched sliders to turn them green
+        touched_css_rules = []
+        for k in candidate_keys:
+            touch_key = f"{db_idx}_{k}"
+            slider_key = f"slider_{db_idx}_{k}"
+            container_key = f"container_{db_idx}_{k}"
+            is_touched = st.session_state.get("touched_sliders", {}).get(touch_key, False)
+            if is_touched and slider_key in st.session_state:
+                val = st.session_state[slider_key]
+                pct = int(val) * 10
+                touched_css_rules.append(f"""
+                /* Target the thumb (handle) */
+                .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"],
+                .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"] {{
+                    background-color: #2e7d32 !important;
+                }}
+                /* Hover / Focus effects */
+                .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"]:hover,
+                .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"]:hover {{
+                    box-shadow: 0px 0px 0px 10px rgba(46, 125, 50, 0.16) !important;
+                }}
+                .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"]:focus,
+                .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"]:focus {{
+                    box-shadow: 0px 0px 0px 10px rgba(46, 125, 50, 0.24) !important;
+                }}
+                /* Target the track background / fill */
+                .st-key-{slider_key} div[data-baseweb="slider"] > div > div,
+                .st-key-{container_key} div[data-baseweb="slider"] > div > div {{
+                    background: linear-gradient(to right, #4caf50 0%, #4caf50 {pct}%, var(--secondary-background-color) {pct}%, var(--secondary-background-color) 100%) !important;
+                }}
+                /* Target the tick bar if it uses stTickBar */
+                .st-key-{slider_key} div[data-testid="stTickBar"],
+                .st-key-{container_key} div[data-testid="stTickBar"] {{
+                    background: linear-gradient(to right, #4caf50 0%, #4caf50 {pct}%, var(--secondary-background-color) {pct}%, var(--secondary-background-color) 100%) !important;
+                }}
+                """)
+        if touched_css_rules:
+            st.markdown(f"<style>{''.join(touched_css_rules)}</style>", unsafe_allow_html=True)
 
         # Update local session scores and show toast if changed by user interaction
         if str(db_idx) not in st.session_state.scores:
