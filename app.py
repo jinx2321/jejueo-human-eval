@@ -570,9 +570,12 @@ else:
                     )
             updated_item_scores[key] = score
 
-        # Update local session scores silently
-        if str(db_idx) not in st.session_state.scores or st.session_state.scores[str(db_idx)] != updated_item_scores:
+        # Update local session scores and show toast if changed by user interaction
+        if str(db_idx) not in st.session_state.scores:
             st.session_state.scores[str(db_idx)] = updated_item_scores
+        elif st.session_state.scores[str(db_idx)] != updated_item_scores:
+            st.session_state.scores[str(db_idx)] = updated_item_scores
+            st.toast("Rating updated locally! / 评分已在本地更新，点击 Next 提交！", icon="💾")
 
         # Quick Save indicator
         if is_admin:
