@@ -187,7 +187,7 @@ def escape_html_display(text):
 database = load_database()
 total_sentences = len(database)
 # Map original_index to current item for fast lookup
-db_by_original_index = {item["original_index"]: item for item in database} if total_sentences > 0 else {}
+db_by_original_index = {item.get("original_index", i): item for i, item in enumerate(database)} if total_sentences > 0 else {}
 candidate_keys = [k for k in database[0].keys() if k not in ["source", "original_index"]] if total_sentences > 0 else []
 
 # --- BACKEND CONFIGURATION ---
@@ -212,7 +212,7 @@ if "session_indices" not in st.session_state and total_sentences > 0:
     st.session_state.index_ptr = 0
     for ptr, s_idx in enumerate(st.session_state.session_indices):
         item = database[s_idx]
-        db_idx = item["original_index"]
+        db_idx = item.get("original_index", s_idx)
         if str(db_idx) not in st.session_state.scores:
             st.session_state.index_ptr = ptr
             break
@@ -238,7 +238,7 @@ def next_sentence():
         return
     ptr = st.session_state.index_ptr
     s_idx = st.session_state.session_indices[ptr]
-    db_idx = database[s_idx]["original_index"]
+    db_idx = database[s_idx].get("original_index", s_idx)
     
     # Check if all candidates for the current sentence are rated/touched
     all_rated = True
@@ -263,7 +263,7 @@ def next_sentence():
         if st.session_state.index_ptr < len(st.session_state.session_indices) - 1:
             st.session_state.index_ptr += 1
             new_s_idx = st.session_state.session_indices[st.session_state.index_ptr]
-            new_db_idx = database[new_s_idx]["original_index"]
+            new_db_idx = database[new_s_idx].get("original_index", new_s_idx)
             st.session_state.shuffled_candidates.pop(new_db_idx, None)
         st.session_state.show_warning = False
     else:
@@ -274,7 +274,7 @@ def prev_sentence():
         return
     ptr = st.session_state.index_ptr
     s_idx = st.session_state.session_indices[ptr]
-    db_idx = database[s_idx]["original_index"]
+    db_idx = database[s_idx].get("original_index", s_idx)
     
     # Check if all candidates for the current sentence are rated
     all_rated = True
@@ -298,7 +298,7 @@ def prev_sentence():
     if st.session_state.index_ptr > 0:
         st.session_state.index_ptr -= 1
         new_s_idx = st.session_state.session_indices[st.session_state.index_ptr]
-        new_db_idx = database[new_s_idx]["original_index"]
+        new_db_idx = database[new_s_idx].get("original_index", new_s_idx)
         st.session_state.shuffled_candidates.pop(new_db_idx, None)
     st.session_state.show_warning = False
 
@@ -307,7 +307,7 @@ def go_to_ptr(ptr):
         return
     current_ptr = st.session_state.index_ptr
     s_idx = st.session_state.session_indices[current_ptr]
-    db_idx = database[s_idx]["original_index"]
+    db_idx = database[s_idx].get("original_index", s_idx)
     
     # Check if all candidates for the current sentence are rated
     all_rated = True
@@ -331,7 +331,7 @@ def go_to_ptr(ptr):
     if 0 <= ptr < len(st.session_state.session_indices):
         st.session_state.index_ptr = ptr
         new_s_idx = st.session_state.session_indices[ptr]
-        new_db_idx = database[new_s_idx]["original_index"]
+        new_db_idx = database[new_s_idx].get("original_index", new_s_idx)
         st.session_state.shuffled_candidates.pop(new_db_idx, None)
     st.session_state.show_warning = False
 
@@ -369,7 +369,7 @@ else:
         session_rated_count = 0
         for s_idx in st.session_state.session_indices:
             item = database[s_idx]
-            db_idx = item["original_index"]
+            db_idx = item.get("original_index", s_idx)
             db_idx_str = str(db_idx)
             if db_idx_str in st.session_state.scores:
                 scores_dict = st.session_state.scores[db_idx_str]
@@ -468,7 +468,7 @@ else:
         ptr = st.session_state.index_ptr
         s_idx = st.session_state.session_indices[ptr]
         current_item = database[s_idx]
-        db_idx = current_item["original_index"]
+        db_idx = current_item.get("original_index", s_idx)
         session_size = len(st.session_state.session_indices)
         
         # Show warning at the top of navigation (Next button is nearby)
@@ -684,7 +684,7 @@ else:
         
         browse_data = []
         for i, item in enumerate(database):
-            orig_idx = item["original_index"]
+            orig_idx = item.get("original_index", i)
             has_rated = "Yes" if str(orig_idx) in st.session_state.scores else "No"
             row = {
                 "Index": orig_idx,
