@@ -1,0 +1,1002 @@
+[
+  {
+    "source": "The two had argued that only a new board would have had the credibility to restore El Paso to health .",
+    "reference": "He and Zilkha believed that only a new board would have had the credibility to restore El Paso to health .",
+    "10M": "The other board has also said that a new group would have to discuss the nation 's business .",
+    "100M": "Only a new board would have argued that only a new board would have the credibility to health .",
+    "Llama_Simple": "They believed that only a new board would have been able to restore El Paso to its former health .",
+    "Llama_Preserve": "The two had contended that only a fresh board would have possessed the credibility necessary to revive El Paso to health.",
+    "Llama_FewShot": "The two contended that only a fresh board would have possessed the credibility necessary to revive El Paso.",
+    "original_index": 13
+  },
+  {
+    "source": "Its Canadian operations only buy beef from facilities that are federally inspected and approved by the Canadian Food Inspection Agency .",
+    "reference": "\" McDonald 's Canada only purchases beef from facilities federally inspected and approved by the Canadian Food Inspection Agency . \"",
+    "10M": "The American military officials say that are investigating by the United States 's Federal Trade Commission and South Korea .",
+    "100M": "Its Canadian operations only buy beef from facilities that are located and approved by the Canadian Food Machines Association .",
+    "Llama_Simple": "Canadian operations only purchase beef from facilities that have been federally inspected and approved by the Canadian Food Inspection Agency .",
+    "Llama_Preserve": "Canadian operations only purchase beef from facilities that have been federally inspected and approved by the Canadian Food Inspection Agency .",
+    "Llama_FewShot": "Its Canadian operations source beef exclusively from federally inspected and approved facilities managed by the Canadian Food Inspection Agency.",
+    "original_index": 51
+  },
+  {
+    "source": "If people took the pill daily , they would lower their risk of heart attack by 88 percent and of stroke by 80 percent , the scientists claim .",
+    "reference": "Taking the pill would lower the risk of heart attack by 88 percent and of stroke by 80 percent , the scientists said .",
+    "10M": "If those people made the risk of their risk of 2 percent , they would end of 10 percent of 2 percent of the world 's .",
+    "100M": "If people took the pill daily , they would lower their risk of heart attack , the scientists said .",
+    "Llama_Simple": "According to the scientists , taking the pill daily can significantly reduce the risk of a heart attack by 88 percent and a stroke by 80 percent .",
+    "Llama_Preserve": "If people take the pill daily , they would lower their risk of heart attack by 88 percent and of stroke by 80 percent , according to the scientists .",
+    "Llama_FewShot": "According to the scientists , if people take the pill daily , they would significantly reduce their risk of heart attack by 88 percent and stroke by 80 percent .",
+    "original_index": 54
+  },
+  {
+    "source": "\" I 'm real excited to be a Cleveland Cavalier , \" James said .",
+    "reference": "\" I 'm really excited about going to Cleveland , \" James told ESPN.com.",
+    "10M": "\" I 'm very happy to be a New York Times , \" he said .",
+    "100M": "\" I 'm pretty anxious to be a Cleveland Cavalier , and I 'm pretty anxious to be a Cleveland Cavalier , \" he said .",
+    "Llama_Simple": "James expressed his enthusiasm by saying , \" I 'm really excited to be a Cleveland Cavalier \" .",
+    "Llama_Preserve": "\"I'm extremely thrilled to be a Cleveland Cavalier,\" James stated.",
+    "Llama_FewShot": "\" I 'm thrilled to be a member of the Cleveland Cavaliers , \" James said .",
+    "original_index": 61
+  },
+  {
+    "source": "Supermarket chains facing a possible grocery clerk strike this week accused union leaders Monday of breaking off contract talks prematurely over the weekend .",
+    "reference": "Supermarket chains are accusing union leaders of breaking off contract talks prematurely over the weekend as grocery clerks gear up for a possible strike .",
+    "10M": "Also in a single year ago theypting more than the same time today , according to the year ago .",
+    "100M": "He told the Associated Press yesterday that it accused union leaders Monday of broke apart after the weekend 's weekend 's weekend 's weekend .",
+    "Llama_Simple": "Supermarket chains facing a possible grocery clerk strike this week have accused union leaders of abruptly ending contract talks over the weekend.",
+    "Llama_Preserve": "Supermarket chains facing a possible grocery clerk strike this week have accused union leaders of abruptly ending contract talks over the weekend .",
+    "Llama_FewShot": "Supermarket chains facing a possible strike by grocery clerks this week accused union leaders of abruptly ending contract talks over the weekend.",
+    "original_index": 65
+  },
+  {
+    "source": "Southwest said it completed inspections of its entire fleet of 385 aircraft -- all 737s -- and found no additional items .",
+    "reference": "Southwest said it had already inspected its fleet of 385 aircraft and found no additional suspicious items .",
+    "10M": "Southwest said it completed inspections of its entire fleet of 385 aircraft and found no additional items , but found no additional items .",
+    "100M": "Southwest said yesterday that it completed inspections of its entire fleet of 385 aircraft , all done .",
+    "Llama_Simple": "Southwest Airlines has completed a thorough inspection of its entire fleet of 385 aircraft, comprising all 737 models, and did not discover any additional issues.",
+    "Llama_Preserve": "Southwest announced that it had finished inspecting its entire fleet of 385 aircraft, comprising all 737s, and uncovered no further issues.",
+    "Llama_FewShot": "Southwest Airlines said it finished inspecting its entire fleet of 385 Boeing 737s and discovered no further issues.",
+    "original_index": 88
+  },
+  {
+    "source": "The study is being published today in the journal Science .",
+    "reference": "Their findings were published today in Science .",
+    "10M": "The board is also published Monday in the Journal of the Journal of the Journal .",
+    "100M": "The study is published Monday in the Journal of Science .",
+    "Llama_Simple": "The study has been accepted for publication in the journal Science and will be released today.",
+    "Llama_Preserve": "The study is being released today in the journal Science.",
+    "Llama_FewShot": "The study is set to be released today in the journal Science.",
+    "original_index": 93
+  },
+  {
+    "source": "\" It 's a recognition that we were provided faulty information , \" Tom Daschle , the senate Democratic leader , told reporters .",
+    "reference": "\" It 's a recognition that we were provided faulty information , \" Senate Democratic Leader Tom Daschle of South Dakota told reporters .",
+    "10M": "He said : \" It 's lawyers that we were among information that we were investigating , \" said .",
+    "100M": "\" It 's a recognition that we were provided available information , \" said Phil Daschlechlechlechlechlechlechlechlechlechlechlechlechlechlechlechlechlechlechlechlechlechlechlech",
+    "Llama_Simple": "Senate Democratic leader Tom Daschle acknowledged that they had been given faulty information , according to reporters .",
+    "Llama_Preserve": "According to Tom Daschle , the Senate Democratic leader , it 's a acknowledgment that we were given faulty information ,",
+    "Llama_FewShot": "Senate Democratic leader Tom Daschle acknowledged that they had been given incorrect information , according to reporters .",
+    "original_index": 96
+  },
+  {
+    "source": "Shares in BA were down 1.5 percent at 168 pence by 1420 GMT , off a low of 164p , in a slightly stronger overall London market .",
+    "reference": "Shares in BA were down three percent at 165-1 / 4 pence by 0933 GMT , off a low of 164 pence , in a stronger market .",
+    "10M": "The dollar were down 1.6 percent at 1.6 percent at a share , on a gallon Stock Exchange .",
+    "100M": "She was down 1.5 percent , down 1.5 percent , or 1.5 percent , down 1.5 percent , down 1.5 percent .",
+    "Llama_Simple": "Shares in British American Tobacco (BA) fell by 1.5 percent to 168 pence at 1420 GMT, reaching a low of 164p, in a slightly stronger overall London market.",
+    "Llama_Preserve": "Shares in BA fell by 1.5 percent to 168 pence by 1420 GMT , off a low of 164p , in a slightly stronger overall London market .",
+    "Llama_FewShot": "Shares in British American Tobacco fell 1.5 percent to 168p by 1420 GMT, off a low of 164p, in a slightly stronger overall London market.",
+    "original_index": 114
+  },
+  {
+    "source": "This comes at a time when Alba is expanding its aluminium output by 307,000 tonnes a year and is accelerating plans for another 307,000 tonnes-a-year increase .",
+    "reference": "That comes as Alba is lifting its aluminium output by 307,000 tonnes a year and accelerating plans for another 307,000 tonnes-a-year increase .",
+    "10M": "The next week is violating at least seven years ago , and is priced at least 2,400 .",
+    "100M": "\" This comes at a time when Alta is expanding its aluminum output by more than 300,000 tons a year , \" he said .",
+    "Llama_Simple": "This is a timely development, as Alba is currently ramping up its aluminium production by 307,000 tonnes annually and is also accelerating plans to further boost output by another 307,000 tonnes per year.",
+    "Llama_Preserve": "This occurs at a critical juncture when Alba is ramping up its aluminium production by 307,000 tonnes annually and is speeding up plans for an additional 307,000 tonnes-a-year boost.",
+    "Llama_FewShot": "This development occurs as Alba is ramping up its aluminium production by 307,000 tonnes annually and accelerating plans for an additional 307,000 tonnes-a-year expansion.",
+    "original_index": 130
+  },
+  {
+    "source": "Weyerhaeuser is the one of the worlds largest producers of softwood lumber , with the capacity to produce 7.6 billion board feet a year .",
+    "reference": "Weyerhaeuser , one of the world 's largest producers of softwood , can produce about 7.6 billion board feet a year .",
+    "10M": "He added : \" We 's one of the top of the Episcopal Church , is the highest slice of the 4.4 million to catch 2.4 billion of the 3.4 billion .",
+    "100M": "\" Weyer said , \" the one-day producers of softwood , with the ability to produce 7.6 billion board a year .",
+    "Llama_Simple": "Weyerhaeuser is one of the world's largest producers of softwood lumber , with an annual production capacity of 7.6 billion board feet .",
+    "Llama_Preserve": "Weyerhaeuser is one of the world's largest producers of softwood lumber , with the ability to manufacture 7.6 billion board feet annually .",
+    "Llama_FewShot": "Weyerhaeuser is one of the world's largest producers of softwood lumber, capable of producing 7.6 billion board feet annually.",
+    "original_index": 135
+  },
+  {
+    "source": "Total Information Awareness is now Terrorism Information Awareness .",
+    "reference": "The new name will be Terrorism Information Awareness .",
+    "10M": "Wall Street is now taxed in the United States .",
+    "100M": "The main main main main main main main main main main main main main main main main main main main main main main main main main main in the administration .",
+    "Llama_Simple": "The Total Information Awareness program has been rebranded as the Terrorism Information Awareness program.",
+    "Llama_Preserve": "Total Information Awareness has been rebranded as Terrorism Information Awareness.",
+    "Llama_FewShot": "Total Information Awareness has been rebranded as Terrorism Information Awareness.",
+    "original_index": 142
+  },
+  {
+    "source": "Last year , there were shortages of shots for diphtheria-tetanus-whooping cough , measles-mumps-rubella , pneumococcal disease , tetanus and chicken pox nationally .",
+    "reference": "In the past two years scientists say there have been vaccine shortages for diphtheria-tetanus-whooping cough , measles-mumps-rubella , pneumococcal disease , tetanus and chicken pox .",
+    "10M": "Last year , there were some of water-water-of-up to be \" he said .",
+    "100M": "For the first time in the past year , there were consolidation of shots for dron-Stray-Stray-Stray-Stray-Stray-Stray-Strayhorn-Stray-Stray-Stray-Stray-Stray-Stray-Stray-Stray-",
+    "Llama_Simple": "There were nationwide shortages of vaccines for diphtheria-tetanus-whooping cough , measles-mumps-rubella , pneumococcal disease , tetanus and chicken pox last year .",
+    "Llama_Preserve": "Last year , there were nationwide shortages of shots for diphtheria-tetanus-whooping cough , measles-mumps-rubella , pneumococcal disease , tetanus and chicken pox .",
+    "Llama_FewShot": "Last year , the nation experienced shortages of vaccines for diphtheria-tetanus-whooping cough , measles-mumps-rubella , pneumococcal disease , tetanus and chicken pox .",
+    "original_index": 146
+  },
+  {
+    "source": "While some other parts of Africa have been used as staging grounds for the terror group , Malawi previously had not been a major focus of investigations into al-Qaida .",
+    "reference": "While some other parts of Africa have been used as Al Qaeda staging grounds , Malawi had previously not been a major focus of investigations into the group .",
+    "10M": "While some of the number of Canada has been used for the attacks , has been used for al-Qaida al-Qaida in the region .",
+    "100M": "While some other parts of Africa have been used as well as for the terror group , Malawi had not been a major focus of investigations .",
+    "Llama_Simple": "While other parts of Africa have been used as staging grounds for the terror group , Malawi had not previously been a major focus of al-Qaida investigations .",
+    "Llama_Preserve": "While some other parts of Africa have been utilized as staging grounds for the terror group , Malawi had not previously been a major focus of investigations into al-Qaida .",
+    "Llama_FewShot": "While other parts of Africa have served as staging grounds for the terror group , Malawi had not previously been a major focus of al-Qaida investigations .",
+    "original_index": 161
+  },
+  {
+    "source": "The Prime Minister , Junichiro Koizumi , joined the criticism .",
+    "reference": "Prime Minister Junichiro Koizumi said Mr Ota deserved to be criticised .",
+    "10M": "The president of the investigation of Rambus , Rambus , joined the risk of Appeals .",
+    "100M": "The Prime Minister , Junichiro Koizumi , joined the criticism .",
+    "Llama_Simple": "Junichiro Koizumi , the Prime Minister , faced criticism .",
+    "Llama_Preserve": "The Prime Minister , Junichiro Koizumi , faced criticism .",
+    "Llama_FewShot": "Prime Minister Junichiro Koizumi also joined the chorus of criticism .",
+    "original_index": 163
+  },
+  {
+    "source": "Gainer said the two staff aides are \" very sorry this all happened , \" and the security personnel had performed \" well within standards . \"",
+    "reference": "The security personnel performed ``well within standards ' ' and the two staff aides were ``very sorry all this happened , ' ' Gainer said .",
+    "10M": "He said the men are very anxious , and it 's going to be good , \" Mr. Powell said .",
+    "100M": "He added that the two staff aides were \" very sorry this all happened , and the security personnel had performed \" well . \"",
+    "Llama_Simple": "Gainer expressed regret over the incident, stating that the two staff aides had operated \"within established standards\" and that the security personnel had performed satisfactorily.",
+    "Llama_Preserve": "Gainer stated that the two staff aides were \" extremely sorry that this unfortunate incident occurred , \" and the security personnel had operated \" flawlessly within established standards . \"",
+    "Llama_FewShot": "Gainer expressed regret over the incident, stating that the security personnel had operated \"within established protocols.\"",
+    "original_index": 178
+  },
+  {
+    "source": "Named in the complaint were former chief executive officers Paul A. Allaire and G. Richard Thoman and former CFO Barry D. Romeril .",
+    "reference": "The executives fined included former Chief Executives Paul A. Allaire and G. Richard Thoman as well as former Chief Financial Officer Barry Romeril .",
+    "10M": "He was chief executive of the chief executive executive executive and chief executive executive executive executive executive executive executive executive executive .",
+    "100M": "He and former chief executive George A. All-in-chief were former chief executive .",
+    "Llama_Simple": "The individuals named in the complaint were former CEO Paul A. Allaire, former CFO G. Richard Thoman, and former CFO Barry D. Romeril.",
+    "Llama_Preserve": "Named in the complaint were former top executives Paul A. Allaire and G. Richard Thoman, along with former Chief Financial Officer Barry D. Romeril.",
+    "Llama_FewShot": "Former CEOs Paul A. Allaire and G. Richard Thoman, along with former Chief Financial Officer Barry D. Romeril, were named in the complaint.",
+    "original_index": 186
+  },
+  {
+    "source": "The Food and Drug Administration rejected ImClone 's 2001 application to sell Erbitux , citing shoddy research .",
+    "reference": "The U.S. Food and Drug Administration rejected ImClone 's original application in December 2001 , saying the trial had been sloppily conducted .",
+    "10M": "The U.S. and Prevention and Drugendi 's Linux and Drug Administration refused to sell their own business , according to the U.S. officials said .",
+    "100M": "The Food and Drug Administration rejected ImClone 's 2001 application to sell Erbitux , saying that .",
+    "Llama_Simple": "In 2001 , the Food and Drug Administration rejected ImClone Systems ' application to market Erbitux due to concerns over shoddy research .",
+    "Llama_Preserve": "The Food and Drug Administration turned down ImClone 's 2001 application to market Erbitux , citing subpar research .",
+    "Llama_FewShot": "The Food and Drug Administration turned down ImClone 's 2001 bid to bring Erbitux to market , citing concerns over flawed research .",
+    "original_index": 189
+  },
+  {
+    "source": "Beaumont said he doesn 't expect a rapturous welcome for Jackson if he goes ahead with his visit to England .",
+    "reference": "Mark Beaumont , a staff writer at music magazine NME , said he doesn 't expect a rapturous welcome for Jackson if he goes ahead with his visit to England .",
+    "10M": "He said he didn 't think that he didn 't want to change with his name to Canada , he said .",
+    "100M": "He added that he doesn 't want a surprise welcome for Jackson if he goes ahead with his visit to England .",
+    "Llama_Simple": "Beaumont warned that Jackson may not receive a warm reception if he proceeds with his planned trip to England .",
+    "Llama_Preserve": "Beaumont stated that he does not anticipate a warm reception for Jackson if he proceeds with his trip to England .",
+    "Llama_FewShot": "Beaumont expressed skepticism that Jackson would receive a warm reception if he proceeds with his planned trip to England .",
+    "original_index": 191
+  },
+  {
+    "source": "The cuts are expected to save Texas consumers more than $ 510 million , and most policyholders will see reductions , Black said .",
+    "reference": "The reductions are expected to save Texas consumers $ 510 million , and most policyholders will see reductions , said Robert Black , an Insurance Department spokesman .",
+    "10M": "The deal are also expected to catch Canada , and most of Medicare will say , he said .",
+    "100M": "The tax is expected to give Texas consumers more than $ 10 million , and most policyholders will see reductions , Black said .",
+    "Llama_Simple": "Black said that the cuts are expected to save Texas consumers more than $ 510 million , and most policyholders will see reductions .",
+    "Llama_Preserve": "The cuts are anticipated to save Texas consumers more than $ 510 million , and most policyholders will experience reductions , according to Black .",
+    "Llama_FewShot": "The cuts are anticipated to save Texas consumers more than $ 510 million , and most policyholders will experience reductions , according to Black .",
+    "original_index": 198
+  },
+  {
+    "source": "The delegation leaves Chicago today , then will take another week to ready the remains for reburial .",
+    "reference": "They leave Chicago on Saturday , then will take another week to ready the remains for reburial .",
+    "10M": "The Democratic Republic of Washington , said he would take the first time to give the National Party .",
+    "100M": "The delegation leaves Chicago Monday night , then will take a week to ready the remains for reburial .",
+    "Llama_Simple": "The delegation departed from Chicago today and will spend the next week preparing the remains for reburial .",
+    "Llama_Preserve": "The delegation departs from Chicago today , and it will take another week to prepare the remains for reburial .",
+    "Llama_FewShot": "The delegation departed Chicago today and will spend the next week preparing the remains for reburial.",
+    "original_index": 206
+  },
+  {
+    "source": "They later fell out and have backed a series of rival Congolese militias in recent years .",
+    "reference": "The two invading countries later fell out , and have since backed rival factions .",
+    "10M": "He said they have turned out of a history of criminal impersonated and took out of an agreement in the year .",
+    "100M": "They later fell out of the series and had backed a series of rival Congolese restaurants in recent years .",
+    "Llama_Simple": "In recent years, they have distanced themselves and supported a series of rival Congolese militias .",
+    "Llama_Preserve": "In recent years, they have since parted ways and allied themselves with a series of rival Congolese militias.",
+    "Llama_FewShot": "They subsequently parted ways and have since supported a series of rival Congolese militias in recent years.",
+    "original_index": 209
+  },
+  {
+    "source": "The April 19 , 1995 , bombing of the Alfred P. Murrah Federal Building came on the second anniversary of the fiery end of the Branch Davidian siege in Waco , Texas .",
+    "reference": "The April 19 , 1995 , bombing came on the second anniversary of the end of the Branch Davidian siege in Waco , Texas .",
+    "10M": "The American U.S. District of the United States came on the United States in the United States , with the United States 's top of the United States , Canada .",
+    "100M": "The bombing took place on the second anniversary of the Clarence P.S. Capitol Building in Waco , Texas .",
+    "Llama_Simple": "The bombing of the Alfred P. Murrah Federal Building on April 19 , 1995 , occurred on the second anniversary of the tragic conclusion of the Branch Davidian siege in Waco , Texas .",
+    "Llama_Preserve": "The April 19 , 1995 , bombing of the Alfred P. Murrah Federal Building occurred on the second anniversary of the fiery conclusion of the Branch Davidian siege in Waco , Texas .",
+    "Llama_FewShot": "The April 19 , 1995 , bombing of the Alfred P. Murrah Federal Building occurred on the second anniversary of the fiery conclusion of the Branch Davidian siege in Waco , Texas .",
+    "original_index": 224
+  },
+  {
+    "source": "United is working closely with the Air Transportation Stabilization Board to replace the aspects of its loan guarantee bid that were rejected as inadequate in December .",
+    "reference": "United is working closely with the ATSB to replace those aspects of the company 's original loan guarantee bid that were rejected as inadequate in December .",
+    "10M": "United States is working with the United States , which is expected to provide the United States in August .",
+    "100M": "United is working closely with the Air Transportation Board to replace the aspects of its loan order that was rejected .",
+    "Llama_Simple": "United is collaborating with the Air Transportation Stabilization Board to address the aspects of its loan guarantee bid that were deemed insufficient in December.",
+    "Llama_Preserve": "United is collaborating closely with the Air Transportation Stabilization Board to revise the aspects of its loan guarantee bid that were deemed insufficient in December .",
+    "Llama_FewShot": "United Airlines is collaborating with the Air Transportation Stabilization Board to revise and resubmit its loan guarantee bid, which was previously deemed inadequate in December.",
+    "original_index": 228
+  },
+  {
+    "source": "After a seven-day trial last year , Thompson found the monument to be an unconstitutional endorsement of religion by the state .",
+    "reference": "Last year , Thompson ruled that the monument was an unconstitutional endorsement of religion by the state .",
+    "10M": "In addition , he said he plans to be an ambush by the state of the state of the state .",
+    "100M": "On Wednesday , he found the monument to be an unconstitutional counterpart of religion by the state .",
+    "Llama_Simple": "According to Thompson , a seven-day trial last year revealed that the monument constituted an unconstitutional endorsement of religion by the state .",
+    "Llama_Preserve": "Last year , after a seven-day trial , Thompson discovered that the monument was an unconstitutional promotion of religion by the state .",
+    "Llama_FewShot": "Following a seven-day trial last year , a judge ruled that the monument constituted an unconstitutional endorsement of religion by the state .",
+    "original_index": 255
+  },
+  {
+    "source": "Closed sessions are routinely held at the United Nations tribunal that deals with Balkan war crimes , but usually to protect witnesses 's safety .",
+    "reference": "Closed sessions are routinely held at the U.N. tribunal that deals with Balkan war crimes , but they are usually closed to protect witnesses who fear for their safety .",
+    "10M": "Shares of the United States are being held at the United States , but there ’ s state ’ s law ” to protect them .",
+    "100M": "Earlier this week , sessions were taken at the United Nations tribunal at the United Nations tribunal in the United Nations , but to protect witnesses 's safety .",
+    "Llama_Simple": "The United Nations tribunal that handles Balkan war crimes typically holds closed sessions to safeguard the safety of witnesses .",
+    "Llama_Preserve": "Closed sessions are regularly convened at the United Nations tribunal that handles Balkan war crimes , but primarily for the protection of witnesses 's safety .",
+    "Llama_FewShot": "Closed sessions are typically held at the United Nations tribunal that handles Balkan war crimes , primarily to safeguard the safety of witnesses .",
+    "original_index": 283
+  },
+  {
+    "source": "The incubation period in cattle is four to five years , said Stephen Sundlof of the U.S. Food and Drug Administration .",
+    "reference": "The incubation period in cattle is four to five years , said Dr. Stephen Sundlof of the Food and Drug Administration ( news - web sites ) .",
+    "10M": "The bill is about five years in the U.S. District Court of the U.S. troops in the United States , the U.S. officials said .",
+    "100M": "The letters were four to five years , said Stephen Smith , U.S. Food and Drug Administration spokeswoman .",
+    "Llama_Simple": "According to Stephen Sundlof of the U.S. Food and Drug Administration , the incubation period for cattle is typically four to five years .",
+    "Llama_Preserve": "According to Stephen Sundlof of the U.S. Food and Drug Administration , the incubation period in cattle spans four to five years .",
+    "Llama_FewShot": "According to Stephen Sundlof of the U.S. Food and Drug Administration , the typical incubation period in cattle ranges from four to five years .",
+    "original_index": 285
+  },
+  {
+    "source": "In addition , the Justice Department said that the FBI has conducted ' ' fewer than 10 ' ' investigations involving visits to mosques .",
+    "reference": "In addition , \" fewer than 10 \" FBI offices have conducted investigations involving visits to Islamic mosques , the Justice Department said .",
+    "10M": "He added that the FBI has made more than 10 ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' 'Connor .",
+    "100M": "In addition , the Justice Department said that the FBI has conducted ' fewer than 10 ' investigations involving visits to mosques .",
+    "Llama_Simple": "The Justice Department stated that the FBI has conducted fewer than 10 investigations related to mosque visits .",
+    "Llama_Preserve": "In addition , the Justice Department stated that the FBI had conducted fewer than 10 investigations involving mosque visits .",
+    "Llama_FewShot": "In addition , the Justice Department stated that the FBI has conducted fewer than 10 investigations involving mosque visits .",
+    "original_index": 292
+  },
+  {
+    "source": "Spinal Concepts , launched in 1996 , makes orthopedic medical devices used during spinal fusion surgical procedures .",
+    "reference": "Spinal Concepts makes spinal fixation products used during spinal fusion surgery .",
+    "10M": "A $ 1.4 million in November , is expected to discuss more than 1.5 million signatures .",
+    "100M": "Spinal <s , launched in 1996 , makes purchases of medical devices used by Spinal pills used during his arrest .",
+    "Llama_Simple": "Spinal Concepts, founded in 1996, is a company that develops and manufactures orthopedic medical devices used in spinal fusion surgical procedures .",
+    "Llama_Preserve": "Spinal Concepts , founded in 1996 , develops orthopedic medical devices utilized during spinal fusion surgical procedures .",
+    "Llama_FewShot": "Spinal Concepts , founded in 1996 , develops orthopedic medical devices used in spinal fusion surgical procedures .",
+    "original_index": 313
+  },
+  {
+    "source": "Also weighing on the market was news that General Motors GM.N planned to issue $ 10 billion in debt , in part to plug a hole in its pension plan .",
+    "reference": "Also hurting was news General Motors GM.N was to issue $ 10 billion in debt , in part to plug a hole in its pension plan .",
+    "10M": "Shares of the market is expected to cost $ 10 billion in more than $ 2.5 million in the world 's position , according to a statement .",
+    "100M": "Also bringing in the market was news that General Motors Corp.N planned to issue $ 10 billion in debt .",
+    "Llama_Simple": "In addition to other market news , General Motors GM.N announced plans to issue $ 10 billion in debt to help fill a gap in its pension plan .",
+    "Llama_Preserve": "Also weighing on the market was news that General Motors GM . N planned to issue $ 10 billion in debt , in part to fill a gap in its pension plan .",
+    "Llama_FewShot": "General Motors GM.N also faced downward pressure as it announced plans to issue $ 10 billion in debt to help shore up its underfunded pension plan .",
+    "original_index": 318
+  },
+  {
+    "source": "SARS went on to claim the lives of 44 people in the Toronto area , including two nurses and a doctor .",
+    "reference": "The virus killed 44 people in the Toronto area , including one doctor and two nurses .",
+    "10M": "SARS went on the number of 4 million people in Europe , including a police and two people , including seven people .",
+    "100M": "SARS went on to claim the lives of 44 people in the Toronto area , including two doctors and a doctor .",
+    "Llama_Simple": "In the Toronto area , SARS ultimately claimed the lives of 44 people , including two nurses and a doctor .",
+    "Llama_Preserve": "SARS ultimately resulted in the loss of 44 lives in the Toronto region , claiming the lives of two nurses and a doctor .",
+    "Llama_FewShot": "SARS ultimately accounted for 44 fatalities in the Toronto region , claiming the lives of two nurses and a doctor .",
+    "original_index": 326
+  },
+  {
+    "source": "The World Health Organization — another Lilly partner , along with the Centers for Disease Control and Prevention and Purdue University — has declared TB a global emergency .",
+    "reference": "The World Health Organization -- which is participating in the initiative along with the Centers for Disease Control and Prevention and Purdue University -- has declared TB a global emergency .",
+    "10M": "The American president , has been charged with Intel , and has been published in Nasdaq , according to the University of IBM .",
+    "100M": "The World Health Organization , one of the doctors , has declared that the Centers for Disease Control and Prevention , has declared landfall a global emergency .",
+    "Llama_Simple": "The World Health Organization, in partnership with the Centers for Disease Control and Prevention and Purdue University, has declared tuberculosis a global health emergency .",
+    "Llama_Preserve": "The World Health Organization , in collaboration with the Centers for Disease Control and Prevention and Purdue University — another Lilly partner — has declared TB a global health emergency .",
+    "Llama_FewShot": "The World Health Organization , in partnership with the Centers for Disease Control and Prevention and Purdue University , has declared TB a global health emergency .",
+    "original_index": 327
+  },
+  {
+    "source": "U.S. District Judge William Steele set a hearing tomorrow on the lawsuit .",
+    "reference": "U.S. District Judge William Steele has set the hearing on the suit for Wednesday .",
+    "10M": "U.S. Supreme Court Judge Mr. Supreme Court of the Supreme Court Judge William H. Supreme Court for the Supreme Court .",
+    "100M": "U.S. District Judge William Callahan , U.S. District Judge William Callahan , U.S. District Judge William Callahan , U.S. District Judge William Callahan , U.S. District Judge William Callahan , U.S. District Judge .",
+    "Llama_Simple": "A U.S. District Judge William Steele has scheduled a hearing for tomorrow in the ongoing lawsuit.",
+    "Llama_Preserve": "U.S. District Judge William Steele has scheduled a hearing for tomorrow in the ongoing lawsuit .",
+    "Llama_FewShot": "A U.S. District Judge William Steele has scheduled a hearing for tomorrow in the ongoing lawsuit.",
+    "original_index": 333
+  },
+  {
+    "source": "Board Chancellor Robert Bennett declined to comment on personnel matters Tuesday .",
+    "reference": "Mr. Mills declined to comment yesterday , saying that he never discussed personnel matters .",
+    "10M": "Mr. Blair declined to comment on Tuesday 's lawyers to comment .",
+    "100M": "Mr. Bennett declined to comment on personnel matters Tuesday .",
+    "Llama_Simple": "Board Chancellor Robert Bennett refused to discuss personnel issues on Tuesday .",
+    "Llama_Preserve": "Chancellor Robert Bennett refused to discuss personnel issues on Tuesday .",
+    "Llama_FewShot": "Board Chairman Robert Bennett refused to discuss personnel issues on Tuesday .",
+    "original_index": 334
+  },
+  {
+    "source": "Still , he noted Miami must decide whether to seek ACC membership for the next school year by June 30 to adhere to Big East guidelines .",
+    "reference": "Still , he noted that Miami must decide whether to seek A.C.C. membership by June 30 to adhere to Big East guidelines .",
+    "10M": "However , he said he plans to discuss the first U.S. Supreme Court of Appeals to protect the first time in November .",
+    "100M": "However , he said it plans to seek membership for the next year to reach Big East for the next year .",
+    "Llama_Simple": "Miami must make a decision by June 30 to join the Atlantic Coast Conference (ACC) for the upcoming school year in order to comply with Big East guidelines .",
+    "Llama_Preserve": "However , he noted that Miami must decide by June 30 whether to pursue ACC membership for the next school year in order to conform to Big East guidelines .",
+    "Llama_FewShot": "Still , the university must decide by June 30 whether to pursue ACC membership for the upcoming school year in order to comply with Big East guidelines .",
+    "original_index": 350
+  },
+  {
+    "source": "U.S. officials say the six were , like other prisoners at the U.S. Naval base in Cuba , suspected of involvement with al-Qaida , Afghanistan 's Taliban or some other group .",
+    "reference": "US officials say the six , like other prisoners at Guantanamo , were suspected of involvement with al-Qaeda , Afghanistan 's Taliban or some other group .",
+    "10M": "U.S. military officials say the U.S. men were , with other cases in the U.S. military attacks in Afghanistan , and other U.S.S. officials said .",
+    "100M": "U.S. officials say the six were , like other prisoners at the U.S. Naval base in Cuba .",
+    "Llama_Simple": "According to U.S. officials , the six individuals , similar to other prisoners at the U.S. Naval base in Cuba , are suspected of having ties to al-Qaida , the Taliban of Afghanistan , or another group .",
+    "Llama_Preserve": "U.S. officials claim that the six individuals , similar to other prisoners at the U.S. Naval base in Cuba , are suspected of being linked to al-Qaida , Afghanistan 's Taliban , or another group .",
+    "Llama_FewShot": "According to U.S. officials , the six individuals , similar to other detainees at the U.S. Naval base in Cuba , are suspected of ties to al-Qaida , Afghanistan 's Taliban , or some other organization .",
+    "original_index": 393
+  },
+  {
+    "source": "\" That said , however , no actual explosives or other harmful substances will be used . \"",
+    "reference": "Ridge said that no actual explosives or other harmful substances will be used .",
+    "10M": "\" It will be used to be used or other formats , \" he said .",
+    "100M": "\" That says , no possible explosives or other explosives will be used , \" Mr. Powell said .",
+    "Llama_Simple": "It's worth noting that no actual explosives or hazardous materials will be employed .",
+    "Llama_Preserve": "As stated , however , it is essential to note that no actual explosives or other hazardous materials will be employed .",
+    "Llama_FewShot": "\" Nevertheless , it is worth noting that no actual explosives or other hazardous materials will be employed . \"",
+    "original_index": 407
+  },
+  {
+    "source": "\" I still don 't think it is a trade secret , \" Bunner said yesterday .",
+    "reference": "\" We don 't think that there is a trade secret here . \"",
+    "10M": "\" I think it doesn 't think it doesn 't think it 't think it doesn 't think it doesn 't think it doesn 't think it doesn 't think it doesn 't think it doesn 't say .",
+    "100M": "\" I still think it 's a trade secret . \"",
+    "Llama_Simple": "Bunner expressed skepticism yesterday , saying he didn't believe it was a trade secret .",
+    "Llama_Preserve": "\"I'm not convinced it's a trade secret , \" Bunner said yesterday .",
+    "Llama_FewShot": "Bunner expressed skepticism yesterday , saying , \" I don 't believe it 's a trade secret .",
+    "original_index": 429
+  },
+  {
+    "source": "In the interview , Mr. Reed said board members could not defend themselves by saying they did not realize the size of Mr. Grasso 's package .",
+    "reference": "Reed said board members can 't defend themselves by saying they didn 't realize the size of Grasso 's package .",
+    "10M": "He said in a statement that the area could not give themselves , but they did not know what they did not say .",
+    "100M": "In the interview , he said board members could not defend themselves by saying they did not realize the size of Mr. Grasso 's package .",
+    "Llama_Simple": "During the interview , Mr. Reed stated that board members could not excuse themselves by claiming they were unaware of the size of Mr. Grasso 's package .",
+    "Llama_Preserve": "During the interview , Mr. Reed stated that board members could not justify themselves by claiming they were unaware of the magnitude of Mr. Grasso 's package .",
+    "Llama_FewShot": "During the interview , Mr. Reed stated that board members could not excuse themselves by claiming they were unaware of the scope of Mr. Grasso 's compensation package .",
+    "original_index": 432
+  },
+  {
+    "source": "Pepper spray and four arrests marked a Monday evening march and rally by about 400 activists protesting an annual training seminar of the Law Enforcement Intelligence Unit .",
+    "reference": "Police using pepper spray arrested 12 people Monday night at a march and rally by about 400 activists protesting an annual training seminar of the Law Enforcement Intelligence Unit .",
+    "10M": "Two months ago , and four months ago , and four months at the next year ago , killing a singletub , a single day of the United States .",
+    "100M": "Like many of the arrests , Jackson and four arrests struck an annual meeting last night as three of the Justice Department 's annual meeting .",
+    "Llama_Simple": "A Monday evening march and rally by approximately 400 activists was marked by pepper spray and four arrests as they protested against an annual training seminar of the Law Enforcement Intelligence Unit.",
+    "Llama_Preserve": "Pepper spray and several arrests characterized a Monday evening march and rally by approximately 400 activists protesting an annual training seminar of the Law Enforcement Intelligence Unit .",
+    "Llama_FewShot": "Pepper spray and four arrests marred a Monday evening march and rally by approximately 400 activists who were protesting an annual training seminar of the Law Enforcement Intelligence Unit.",
+    "original_index": 435
+  },
+  {
+    "source": "Captain Robert Ramsey of US 1St Armored Division said a truck had exploded outside the building at around 11 am .",
+    "reference": "Earlier , Captain Robert Ramsey of the First Armoured Division said a truck had exploded outside the buildings at around 11am .",
+    "10M": "In addition , the U.S. military spokesman of 4 , said that 6-1 per cent was out of the building at 1 .",
+    "100M": "Mr. Roberta of U.S. Army Division said a truck had exploded outside the building at around 11 am .",
+    "Llama_Simple": "According to Captain Robert Ramsey of the US 1st Armored Division, a truck detonated outside the building at approximately 11 am.",
+    "Llama_Preserve": "Captain Robert Ramsey of the US 1st Armored Division stated that a truck had exploded outside the building around 11 am .",
+    "Llama_FewShot": "Captain Robert Ramsey, commander of the US 1st Armored Division, reported that a truck detonated outside the building at approximately 11 am.",
+    "original_index": 440
+  },
+  {
+    "source": "He admits that the law \" has several weaknesses which terrorists could exploit , undermining our defenses . \"",
+    "reference": "But he also told the House Judiciary Committee the law \" has several weaknesses which terrorists could exploit , undermining our defenses . \"",
+    "10M": "He added that the law \" has some issues that Iraq could stop , undermining our defenses . \"",
+    "100M": "He added that the law \" has several weaknesses which terrorists could exploit , undermining our defenses . \"",
+    "Llama_Simple": "He acknowledges that the law has several vulnerabilities that terrorists could potentially exploit, compromising our defenses .",
+    "Llama_Preserve": "\"He acknowledges that the law has several vulnerabilities that terrorists can exploit, compromising our defenses.\"",
+    "Llama_FewShot": "He acknowledges that the law has several vulnerabilities that terrorists could exploit , compromising our defenses .",
+    "original_index": 447
+  },
+  {
+    "source": "Mr Kerkorian said : \" We believe that recent trading prices of MGM 's common stock do not reflect MGM 's full value and that the stock represents and attractive investment . \"",
+    "reference": "\" We believe that recent trading prices of MGM 's common stock do not reflect MGM 's full value and that the stock represents an attractive investment , \" Kerkorian said in a statement .",
+    "10M": "\" We believe that demand in a significant risk of Oracle 's best quarter 's growth and improve , \" he said .",
+    "100M": "\" We believe that recent trading prices of Christmas 's common stock do not reflect sunlight 's full value , \" he said .",
+    "Llama_Simple": "Mr. Kerkorian stated that he believes the current market price of MGM's common stock does not accurately represent its true value, making it an attractive investment opportunity .",
+    "Llama_Preserve": "Mr. Kerkorian stated , \" We believe that recent trading prices of MGM 's common stock do not accurately represent the full value of the company and that the stock is an attractive investment . \"",
+    "Llama_FewShot": "Mr. Kerkorian stated that he believes the recent trading prices of MGM's common stock do not accurately reflect the company's true value, making it an attractive investment opportunity.",
+    "original_index": 449
+  },
+  {
+    "source": "\" We hope all parties will continue to make efforts and continue the process of dialogue , \" the Chinese Foreign Ministry said in a statement .",
+    "reference": "China 's foreign ministry said : \" We hope all parties will continue to make efforts and continue the process of dialogue . \"",
+    "10M": "\" We think that we will continue to make the decision to make , \" he said .",
+    "100M": "\" We hope all party plans to make efforts and continue the process , \" the Chinese Foreign Ministry said .",
+    "Llama_Simple": "The Chinese Foreign Ministry expressed hope that all parties will continue to make efforts and keep the dialogue process going , according to a statement .",
+    "Llama_Preserve": "The Chinese Foreign Ministry expressed hope that all parties would maintain their efforts and continue the dialogue process , according to a statement .",
+    "Llama_FewShot": "The Chinese Foreign Ministry stated in a statement that all parties are expected to maintain their efforts and continue the dialogue process .",
+    "original_index": 451
+  },
+  {
+    "source": "KEDO Spokesman , Roland Tricot said : \" The executive board decided to refer this question to capitals .",
+    "reference": "\" The executive board decided to refer this to the capitals , \" the Korean Energy Development Organization said .",
+    "10M": "In a statement , \" The president of the board said : \" The board had \" to this matter to me . \"",
+    "100M": "\" The executive board decided this question last week that \" The executive board decided this question to question him . \"",
+    "Llama_Simple": "According to Roland Tricot, a KEDO spokesman , the executive board has decided to refer the matter to the capitals .",
+    "Llama_Preserve": "KEDO Spokesman , Roland Tricot stated : \" The executive board chose to direct this issue to capitals .",
+    "Llama_FewShot": "KEDO Spokesman Roland Tricot stated that the executive board has decided to refer this matter to capitals .",
+    "original_index": 457
+  },
+  {
+    "source": "\" I 'm amazed at the number of people who think there is a silver bullet for security , \" Capellas said .",
+    "reference": "\" I 'm amazed at how many people think there is a silver bullet for security , \" he said .",
+    "10M": "\" I think there 's at the number of people who do with these people , \" he said .",
+    "100M": "\" I am astonished at the number of people who think there 's a space gun for security , \" he said .",
+    "Llama_Simple": "According to Capellas , he is astonished by the large number of people who believe there is a single solution for security .",
+    "Llama_Preserve": "\"I'm astonished by the sheer number of individuals who believe there exists a silver bullet for security , \" Capellas stated .",
+    "Llama_FewShot": "\" I 'm astonished by the sheer number of people who believe there is a silver bullet for security , \" Capellas said .",
+    "original_index": 466
+  },
+  {
+    "source": "\" This action in no way reduces our commitment to the North American market or changes our long-term plan for growth , \" said O 'Neill , who is based in California .",
+    "reference": "This action in no way reduces our commitment to the North American market or changes our long-term plan for growth , \" O 'Neill said .",
+    "10M": "\" This agency 's decision to the American U.S. United States 's long thing to our agreement for our interest , \" he said .",
+    "100M": "\" This action in no way for growth , \" said O 'Neill , who is based in California 's Web site .",
+    "Llama_Simple": "Neill , based in California , stated that this action does not affect our commitment to the North American market or alter our long-term growth strategy .",
+    "Llama_Preserve": "\"This action in no way diminishes our commitment to the North American market or alters our long-term plan for growth , \" said O 'Neill , who is based in California .",
+    "Llama_FewShot": "\" This move in no way diminishes our dedication to the North American market or alters our long-term strategy for growth ,\" said O'Neill , who is based in California .",
+    "original_index": 469
+  },
+  {
+    "source": "Researchers found the fossils in a semidesert area of Venezuela , about 250 miles west of Caracas .",
+    "reference": "Phoberomys ' skeleton was unearthed 250 miles west of Caracas , Venezuela .",
+    "10M": "Shares of the spree was found in a towel , about 57,000 area , about 57,400 .",
+    "100M": "The researchers found the discovery of the discovery , about 250 miles west of Carls , about 250 miles west of Carls , about 250 miles north of Carls , about 250 miles north of Carls .",
+    "Llama_Simple": "Fossils were discovered in a semi-desert region of Venezuela , approximately 250 miles west of the capital city of Caracas .",
+    "Llama_Preserve": "Researchers discovered the fossils in a semi-arid region of Venezuela , approximately 250 miles west of Caracas .",
+    "Llama_FewShot": "Fossil remains were discovered in a semi-arid region of Venezuela , approximately 250 miles west of the capital city of Caracas .",
+    "original_index": 476
+  },
+  {
+    "source": "Agents found more than 1,000 credit cards and credit card duplicating machines during a search of Ragin 's address .",
+    "reference": "When Ragin 's address was raided , authorities found more than 1,000 credit cards and duplicating machines .",
+    "10M": "The stock rose more than 1,000 people into a compromise and took place during a single quarter of water 's hand .",
+    "100M": "Investigators found more than 1,000 credit cards and credit card names , and credit card names .",
+    "Llama_Simple": "During a search of Ragin's address , agents discovered over 1,000 credit cards and credit card duplicating machines .",
+    "Llama_Preserve": "Agents discovered over 1,000 credit cards and credit card duplication devices during a thorough search of Ragin 's address .",
+    "Llama_FewShot": "During a search of Ragin 's address , agents uncovered more than 1,000 credit cards and credit card duplicating machines.",
+    "original_index": 501
+  },
+  {
+    "source": "A poll showed that the FBI bugging of the mayor had given a boost to his reelection effort against GOP opponent Sam Katz .",
+    "reference": "A poll released this week showed that the FBI bugging of the mayor has given a boost to his re-election effort .",
+    "10M": "A group showed that the FBI had given a refueling his abdomen to a placebo .",
+    "100M": "A survey of the mayor had given a boost in the past three weeks that the FBI has given a boost to him .",
+    "Llama_Simple": "A recent poll revealed that the FBI's wiretapping of the mayor had unexpectedly bolstered his chances in his reelection bid against Republican opponent Sam Katz.",
+    "Llama_Preserve": "A poll revealed that the FBI surveillance of the mayor had provided a significant boost to his reelection campaign against GOP opponent Sam Katz .",
+    "Llama_FewShot": "A poll revealed that the FBI surveillance of the mayor provided a significant boost to his reelection campaign against Republican opponent Sam Katz.",
+    "original_index": 505
+  },
+  {
+    "source": "On Monday during an annual biotechnology meeting in Washington , President Bush criticized Europe for aggravating hunger in Africa by closing its markets to genetically modified food .",
+    "reference": "President Bush on Monday accused Europe of aggravating hunger in Africa by closing its markets to genetically modified food .",
+    "10M": "On Tuesday , the second-based U.S. appeals court in Washington and U.S. Attorney President Bush will be sent back in the past year in their pickup system .",
+    "100M": "On Monday , President Bush praised Europe 's annual meeting in Washington after closing its markets to genetically modified food markets to genetically modified food markets .",
+    "Llama_Simple": "During an annual biotechnology meeting in Washington on Monday , President Bush criticized Europe for exacerbating hunger in Africa by closing its markets to genetically modified food .",
+    "Llama_Preserve": "On Monday , during an annual biotechnology conference in Washington , President Bush criticized Europe for exacerbating hunger in Africa by closing its markets to genetically modified food .",
+    "Llama_FewShot": "At a biotechnology conference in Washington on Monday , President Bush criticized Europe for exacerbating hunger in Africa by shutting its markets to genetically modified food .",
+    "original_index": 538
+  },
+  {
+    "source": "He met members of the nation 's biggest business lobby and was quoted as saying he wanted China to adopt flexible trade and foreign exchange policies .",
+    "reference": "Japan 's business lobby quoted Snow as saying he wanted China to be flexible on its trade and foreign exchange policies .",
+    "10M": "He spoke on the company 's new business and has been able to determine whether he said he plans to simplify chemical and biological weapons system .",
+    "100M": "He met several members of the nation 's biggest business suite and was quoted as saying he wanted China to adopt flexible trade and foreign exchange policies .",
+    "Llama_Simple": "He met with representatives of the nation 's largest business lobby and was quoted as saying that he wanted China to adopt more flexible trade and foreign exchange policies .",
+    "Llama_Preserve": "He met with representatives of the nation 's largest business lobby and was quoted as saying he wanted China to adopt more flexible trade and foreign exchange policies .",
+    "Llama_FewShot": "He met with representatives from the nation 's largest business lobby and was quoted as saying he hoped China would adopt more flexible trade and foreign exchange policies .",
+    "original_index": 541
+  },
+  {
+    "source": "The subject was scarcely mentioned in his campaign , or in the national security strategy that is his administration 's bible .",
+    "reference": "The subject was scarcely mentioned in his 2000 campaign , or in his administration 's national security strategy .",
+    "10M": "The board has been filed in his wife , which is his wife 's former government 's president 's health and is speaking at the national-of-year-year-year-year-year-year-year-year-year-year-year-year-year-year-year-year-",
+    "100M": "In his campaign , the main subject was his administration , or in the national security policy that is his administration 's ear .",
+    "Llama_Simple": "The subject was barely mentioned in his campaign , or in the national security strategy , which is considered the bible of his administration .",
+    "Llama_Preserve": "The subject was hardly ever mentioned in his campaign , or in the national security strategy that serves as his administration 's bible .",
+    "Llama_FewShot": "The subject was barely mentioned in his campaign , or in the national security strategy that serves as his administration 's guiding document .",
+    "original_index": 542
+  },
+  {
+    "source": "\" Each institution helped Enron mislead its investors by characterizing what were essentially loan proceeds as cash from operating activities , \" the SEC said in a statement .",
+    "reference": "The SEC said each bank helped Enron mislead investors by characterizing \" what were essentially loan proceeds \" as cash from operating activities .",
+    "10M": "Last week filed a statement against the nation 's lawyers that were responsible for companies , \" said in a statement .",
+    "100M": "In a statement , the SEC said : \" each society helped Enron Chairman helped Enron 's investors as well as cash from operating activities , \" said .",
+    "Llama_Simple": "The SEC stated that each institution assisted Enron in deceiving its investors by misclassifying loan proceeds as cash from operating activities .",
+    "Llama_Preserve": "According to the SEC , each institution assisted Enron in misleading its investors by labeling what were essentially loan proceeds as cash from operating activities ,",
+    "Llama_FewShot": "According to the SEC , each institution was accused of misleading investors by characterizing essentially loan proceeds as cash from operating activities , in a statement .",
+    "original_index": 546
+  },
+  {
+    "source": "The MTA will not discuss the matter because of pending litigation .",
+    "reference": "MTA spokeswoman Marisa Baldeo Sunday night declined to discuss the matter because of the pending litigation .",
+    "10M": "The FTC will not be heard of the right , according to the report said .",
+    "100M": "The MTA will not discuss the matter because of pending anonymity .",
+    "Llama_Simple": "The MTA is currently unable to comment on the issue due to ongoing legal proceedings.",
+    "Llama_Preserve": "The MTA will refrain from addressing the issue due to ongoing litigation .",
+    "Llama_FewShot": "The MTA is choosing not to comment on the issue at this time due to ongoing litigation.",
+    "original_index": 548
+  },
+  {
+    "source": "Enter Miami Police Chief John Timoney , an avowed enemy of activist \" punks \" who repeatedly classified FTAA opponents as \" outsiders coming in to terrorize and vandalize our city . \"",
+    "reference": "Enter the Miami police chief , John Timoney , an avowed enemy of activist \" punks \" , who classified FTAA opponents as \" outsiders coming in to terrorise and vandalise our city \" .",
+    "10M": "In Iraq , an Australian woman who opens him as well as well as well as well as well as well as well as \"",
+    "100M": "Tim said yesterday that the two leaders of the two leaders were able to identify , \" Mr. Tim said .",
+    "Llama_Simple": "Miami Police Chief John Timoney viewed activist \" punks \" as his arch-nemesis , labeling FTAA opponents as \" outsiders who sought to terrorize and vandalize the city . \"",
+    "Llama_Preserve": "Enter Miami Police Chief John Timoney , a vocal critic of activist \" punks \" who consistently labeled FTAA opponents as \" outsiders coming to terrorize and vandalize our city . \"",
+    "Llama_FewShot": "Enter Miami Police Chief John Timoney , a vocal critic of activist \" punks \" who frequently characterized FTAA opponents as \" outsiders coming in to terrorize and vandalize our city . \"",
+    "original_index": 552
+  },
+  {
+    "source": "The Department of Foreign Affairs and Trade yesterday warned Australians to defer all nonessential travel to Indonesia because of reports of planned terrorist attacks .",
+    "reference": "The Department of Foreign Affairs yesterday updated its travel warning on Indonesia , recommending all non-essential travel be deferred because of concerns that more terrorist attacks were planned .",
+    "10M": "The Department of State Department said it was to simplify all of five years to Canada because of anonymity , according to the attacks .",
+    "100M": "The Department of Foreign Affairs told The Department : The Department of Homeland Security and Exchange Commission ( news - news - news - news - news - news - news - news - news - news - news - news - news - news - news - news - news - news - news - news - news - news - news -",
+    "Llama_Simple": "The Australian Department of Foreign Affairs and Trade issued a warning yesterday advising Australians to postpone all non-essential travel to Indonesia due to credible reports of planned terrorist attacks.",
+    "Llama_Preserve": "The Department of Foreign Affairs and Trade issued a warning to Australians yesterday , advising them to postpone all non-essential travel to Indonesia due to credible reports of impending terrorist attacks .",
+    "Llama_FewShot": "The Department of Foreign Affairs and Trade issued a warning yesterday advising Australians to postpone all non-essential travel to Indonesia due to credible reports of planned terrorist attacks.",
+    "original_index": 563
+  },
+  {
+    "source": "But the inadequate performance of students in various subgroups tagged the state as deficient under the federal No Child Left Behind act .",
+    "reference": "But the inadequate performance of students in various subgroups , such as race , pushed the state onto the needs-improvement list under the federal No Child Left Behind Act .",
+    "10M": "But the plaintiffs of people in the U.S. officials in the federal U.S. District Court of the U.S. Supreme Court of the U.S. deck of the United States .",
+    "100M": "But the inadequate performance of students in many subways , as interested under the federal No.3 Act .",
+    "Llama_Simple": "The state was deemed deficient under the federal No Child Left Behind act due to the poor performance of students in various subgroups.",
+    "Llama_Preserve": "However, the poor performance of students in different subgroups marked the state as inadequate under the federal No Child Left Behind act .",
+    "Llama_FewShot": "However, the poor performance of students in certain subgroups led the state to be labeled as deficient under the federal No Child Left Behind Act.",
+    "original_index": 569
+  },
+  {
+    "source": "The Dow Jones industrial average < .DJI > was off 58.69 points , or 0.64 percent , at 9,137.86 .",
+    "reference": "The Dow Jones industrial average .DJI fell 79.43 points , or 0.86 percent , to 9,117.12 on Friday .",
+    "10M": "Shares of the Dow Jones industrial average was down 0.51 , or 0.4 percent , at 9,498 .",
+    "100M": "In morning trading , the Dow Jones industrial average was off 52.7 percent , or 0.7 percent , at 8,832.69 .",
+    "Llama_Simple": "The Dow Jones industrial average fell 58.69 points , or 0.64 percent , to close at 9,137.86 .",
+    "Llama_Preserve": "The Dow Jones industrial average < .DJI > fell 58.69 points , or 0.64 percent , to 9,137.86 .",
+    "Llama_FewShot": "The Dow Jones industrial average fell 58.69 points, or 0.64 percent, to 9,137.86.",
+    "original_index": 592
+  },
+  {
+    "source": "\" For us that doesn 't make a difference , the sexual orientation , \" Tutu told television reporters in Soweto .",
+    "reference": "\" For us , that doesn 't make a difference - the sexual orientation , \" Archbishop Tutu said in the black urban centre of Soweto .",
+    "10M": "\" For us that doesn 't make a lot , the sexual orientation , \" Mr. Ebas said .",
+    "100M": "\" For us that doesn 't make a difference , the sexual orientation , the sexual orientation , \" Tutu told television reporters .",
+    "Llama_Simple": "Tutu told television reporters in Soweto that for us , what matters is not the sexual orientation .",
+    "Llama_Preserve": "\"For us, that doesn't matter,\" Tutu said to television reporters in Soweto.",
+    "Llama_FewShot": "\"For us, that doesn't matter,\" Tutu said to television reporters in Soweto .",
+    "original_index": 600
+  },
+  {
+    "source": "Anhalt said children typically treat a 20-ounce soda bottle as one serving , while it actually contains 2 1 / 2 servings .",
+    "reference": "For example , Anhalt said , children typically treat a 20-ounce soda bottle as one serving , although it actually contains 2 ½ 8-ounce servings .",
+    "10M": "A piece of the 3-year-old boy said a 2 / 2 / 2 / 2 / 2 / 2 / 2 cents .",
+    "100M": "Anhalt said children typically treat a 20-ounce soda bottle as one serving , while it actually contains 2 1 / 2 .",
+    "Llama_Simple": "According to Anhalt , children usually consider a 20-ounce soda bottle to be one serving , but it actually contains 2 1 / 2 servings .",
+    "Llama_Preserve": "According to Anhalt , children usually consider a 20-ounce soda bottle as one serving , whereas it actually comprises 2 1 / 2 servings .",
+    "Llama_FewShot": "According to Anhalt , children usually consider a 20-ounce soda bottle as one serving , whereas it actually comprises 2 1 / 2 servings .",
+    "original_index": 644
+  },
+  {
+    "source": "That fire devastated timber on the reservation , charred 469,000 acres and destroyed 491 homes in surrounding communities .",
+    "reference": "That fire devastated the reservation , a nearby national forest and several communities , burning 469,000 acres and destroying 491 homes .",
+    "10M": "The fire on the 3,000 acres on the 3,400 and 1,000 homes have been destroyed in their homes .",
+    "100M": "That fire has so far been destroyed , charred 4.7 acres and destroyed 382 homes in surrounding communities .",
+    "Llama_Simple": "A devastating fire ravaged the timber on the reservation , consuming 469,000 acres and destroying 491 homes in nearby communities .",
+    "Llama_Preserve": "A devastating fire ravaged the timber on the reservation, consuming 469,000 acres and leaving 491 homes in nearby communities in ruins.",
+    "Llama_FewShot": "A devastating wildfire ravaged timber on the reservation , consuming 469,000 acres and destroying 491 homes in nearby communities .",
+    "original_index": 646
+  },
+  {
+    "source": "The dead cavalry have been honored for more than a century with a hilltop granite obelisk and white headstones .",
+    "reference": "The dead cavalrymen are honored with a hilltop granite obelisk and white headstones .",
+    "10M": "The police have been reported for more than more than more than more than a squirt in water 's bathtub .",
+    "100M": "The dead army has been honored for more than a decade with a hillside headless headless headless headless headless headless headless and black headless headless headless .",
+    "Llama_Simple": "For over a century , a hilltop granite obelisk and white headstones have honored the fallen cavalry .",
+    "Llama_Preserve": "The deceased cavalry have been commemorated for more than a century with a hilltop granite monument and white headstones .",
+    "Llama_FewShot": "For over a century, the fallen cavalrymen have been commemorated with a hilltop granite monument and white headstones.",
+    "original_index": 664
+  },
+  {
+    "source": "\" He 's made it plain that if we think we are facing a suicide bomber , we should shoot first and ask questions later , \" one senior officer said .",
+    "reference": "One senior officer said : \" He 's made it plain that if we think we are facing a suicide bomber , we should shoot first and ask questions later . \"",
+    "10M": "\" He made it because we felt it if we will win a suicide , \" he said .",
+    "100M": "\" He 's made it plain that if we think we are facing a suicide bomber , we should shoot first and ask questions . \"",
+    "Llama_Simple": "A senior officer stated that if we believe we are dealing with a suicide bomber , we should shoot first and ask questions later .",
+    "Llama_Preserve": "According to a senior officer , he has made it clear that if we believe we are dealing with a suicide bomber , we should shoot first and ask questions later .",
+    "Llama_FewShot": "According to a senior officer , he 's made it clear that if we believe we are dealing with a suicide bomber , we should shoot first and ask questions later .",
+    "original_index": 689
+  },
+  {
+    "source": "Scott McClellan , a White House spokesman , called the decision \" troubling and flawed . \"",
+    "reference": "White House spokesman Scott McClellan called the Padilla ruling \" troubling and flawed .",
+    "10M": "In a New York Times , a New York Times , called the president 's decision and Matrix spokeswoman . \"",
+    "100M": "Scott McClellan , a White House spokesman , called the decision \" special . \"",
+    "Llama_Simple": "Scott McClellan , a White House spokesperson , described the decision as \" troubling and flawed \" .",
+    "Llama_Preserve": "Scott McClellan , a White House spokesperson , described the decision as \" troubling and flawed \" .",
+    "Llama_FewShot": "Scott McClellan , a White House spokesperson , described the decision as \" troubling and flawed \" .",
+    "original_index": 696
+  },
+  {
+    "source": "Proposition 34 , a campaign financing initiative that voters passed in 2000 , limits fund raising and spending by gubernatorial candidates .",
+    "reference": "Proposition 34 , a campaign financing initiative passed by the voters in 2000 , limits fund-raising and spending by candidates for governor .",
+    "10M": "Revenue in 1998 , a lawsuit filed in 1998 and Uganda that he served in 1998 , which killed in Afghanistan .",
+    "100M": "34 , a campaign campaign for Democrats passed in 2002 , limits raising and spending by presidential candidates .",
+    "Llama_Simple": "In 2000 , voters approved Proposition 34 , a campaign finance initiative that restricts fundraising and spending by gubernatorial candidates .",
+    "Llama_Preserve": "Proposition 34 , a campaign finance initiative that voters approved in 2000 , restricts fund raising and spending by gubernatorial candidates .",
+    "Llama_FewShot": "Proposition 34 , a 2000 ballot initiative , restricts gubernatorial candidates from raising and spending funds .",
+    "original_index": 704
+  },
+  {
+    "source": "Both strain 121 and Pyrolobus belong to a branch on the tree of life known as the archaea .",
+    "reference": "Both Strain 121 and Pyrolobus fumarii are members of the unusual life domain known as Archaea .",
+    "10M": "The technology is going to be on the right to be used to be used to be used for years .",
+    "100M": "At a branch of life , both of them belonged to a branch of life known to a branch of life known .",
+    "Llama_Simple": "Both Strain 121 and Pyrolobus are classified within the Archaea branch of the tree of life .",
+    "Llama_Preserve": "Both Strain 121 and Pyrolobus belong to a distinct branch on the tree of life known as the Archaea .",
+    "Llama_FewShot": "Both Strain 121 and Pyrolobus are classified under the archaea branch of the tree of life.",
+    "original_index": 727
+  },
+  {
+    "source": "\" And the swagger of a president who says ' Bring ' em on ' does not bring our troops peace or safety . \"",
+    "reference": "And the swagger of a president saying `bring `em on ' will never bring peace , \" Kerry said .",
+    "10M": "And the University of a member who 's so , did not get their rights or other members , \" he said .",
+    "100M": "\" And the swagger of a president who writes 'em did not bring our troops on ' ' did not bring our troops to the United States , ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' ' said .",
+    "Llama_Simple": "A president who boasts ' Bring ' em on ' does not guarantee peace or safety for our troops .",
+    "Llama_Preserve": "And the swagger of a president who proclaims ' Bring ' em on ' does not guarantee our troops peace or safety .",
+    "Llama_FewShot": "\" And the swagger of a president who dares to say ' Bring ' em on ' is far from guaranteeing peace or safety for our troops . \"",
+    "original_index": 735
+  },
+  {
+    "source": "The leader of Myanmar 's National League for Democracy won a 1990 election by a landslide but was never allowed to govern .",
+    "reference": "Suu Kyi 's National League for Democracy won a landslide election in 1990 but has never been allowed to govern .",
+    "10M": "The National Minister of Mosul 's Democratic Republic of Congo 's election won a town of anonymity , but was not able to give a mosque .",
+    "100M": "The leader of Myanmar 's National League for Democracy won a 1990 election by a landslide .",
+    "Llama_Simple": "The leader of Myanmar 's National League for Democracy won a landslide victory in the 1990 election but was never permitted to govern .",
+    "Llama_Preserve": "The leader of Myanmar 's National League for Democracy emerged victorious in a 1990 election by a landslide , but was never permitted to govern .",
+    "Llama_FewShot": "The leader of Myanmar 's National League for Democracy won a landslide victory in the 1990 election but was never permitted to assume power .",
+    "original_index": 740
+  },
+  {
+    "source": "The Foundation said telephone support would cost $ 39.95 per incident .",
+    "reference": "The group is also offering end user telephone support for $ 39.95 per incident .",
+    "10M": "The company said it would cost $ 1.4 percent of $ 1.2 billion .",
+    "100M": "The Foundation said telephone support would cost $ 39.89 per incident .",
+    "Llama_Simple": "The Foundation charges $39.95 per incident for telephone support.",
+    "Llama_Preserve": "The Foundation stated that telephone support would cost $39.95 per incident.",
+    "Llama_FewShot": "The organization stated that telephone support would cost $39.95 per incident.",
+    "original_index": 741
+  },
+  {
+    "source": "The company has 30 days to respond to the charges before the FCC makes a final ruling .",
+    "reference": "AT & T has 30 days to respond to the charges before the F.C.C. issues a final order .",
+    "10M": "The company has died today to the first time to make a third meeting .",
+    "100M": "The company has 30 days to respond before the bill makes a final ruling .",
+    "Llama_Simple": "The company has 30 days to respond to the charges before the Federal Communications Commission (FCC) issues its final decision.",
+    "Llama_Preserve": "The company has 30 days to respond to the allegations before the FCC issues a final decision.",
+    "Llama_FewShot": "The company has 30 days to respond to the FCC before a final decision is made.",
+    "original_index": 747
+  },
+  {
+    "source": "Sales -- a figure watched closely as a barometer of health -- rose 5 percent instead of falling as many industry experts predicted .",
+    "reference": "It also disclosed that sales -- a figure closely watched by analysts as a barometer of its health -- were significantly higher than industry experts expected .",
+    "10M": "Analysts used to 1 percent of 4.6 percent of 2 percent of a share , according to 4.4 percent of some of the year .",
+    "100M": "Sales -- a figure closely watched by a barometer of health , a figure closely predicted .",
+    "Llama_Simple": "Industry experts had forecast a decline, but sales figures unexpectedly rose by 5 percent.",
+    "Llama_Preserve": "Industry experts closely monitored a key sales figure, which served as a gauge of health, and were surprised to see it rise by 5 percent, contrary to their forecast.",
+    "Llama_FewShot": "Sales, a closely watched gauge of the industry's health, rose 5 percent, defying expectations that it would decline.",
+    "original_index": 758
+  },
+  {
+    "source": "The Justice Department and the Federal Communications Commission have the final say .",
+    "reference": "But the deal must get approval from the Federal Communications Commission and the Justice Department 's antitrust division .",
+    "10M": "The United States and the United States and the United States has the United States 's the United States .",
+    "100M": "The Justice Department and the Federal Trade Commission have the final say .",
+    "Llama_Simple": "The Justice Department and the Federal Communications Commission hold the ultimate authority.",
+    "Llama_Preserve": "The Justice Department and the Federal Communications Commission have the last word .",
+    "Llama_FewShot": "The Justice Department and the Federal Communications Commission hold the final authority.",
+    "original_index": 775
+  },
+  {
+    "source": "Hidalgo County Judge Ramon Garcia remembers how he and his friends used to have to sneak around the school yard to speak Spanish .",
+    "reference": "Hidalgo County Judge Ramon Garcia says when he was growing up , he wasn 't allowed to speak Spanish at school .",
+    "10M": "Hough said he wants to have enough children from the water and he couldn 't have done to have around the water .",
+    "100M": "He added that he and his friends used to have enough to have enough to have enough to have enough to talk Spanish .",
+    "Llama_Simple": "Hidalgo County Judge Ramon Garcia reminisces about the days when he and his friends would secretly converse in Spanish in the school yard.",
+    "Llama_Preserve": "Hidalgo County Judge Ramon Garcia recalls how he and his friends would often have to sneak around the school yard to converse in Spanish .",
+    "Llama_FewShot": "Hidalgo County Judge Ramon Garcia reminisces about the days when he and his friends would secretly converse in Spanish in the school yard.",
+    "original_index": 777
+  },
+  {
+    "source": "Microsoft will pay Time Warner AOL $ 750 million to settle an outstanding antitrust suit brought by Time Warner 's Netscape division .",
+    "reference": "Microsoft on Thursday agreed to pay AOL Time Warner $ 750 million to settle AOL Time Warner 's private monopoly lawsuit against Microsoft .",
+    "10M": "Microsoft will be paid to be paid by Intel 's Web site of Microsoft 's servers , according to create a separate investigation of Microsoft 's Server software .",
+    "100M": "Microsoft will pay him $ 250 million to settle an annual suit made by Time Warner 's Netscape division .",
+    "Llama_Simple": "Microsoft has agreed to pay $ 750 million to settle an antitrust lawsuit filed by Time Warner's Netscape division .",
+    "Llama_Preserve": "Microsoft will pay Time Warner 's Netscape division $ 750 million to settle an outstanding antitrust lawsuit brought by Time Warner .",
+    "Llama_FewShot": "Microsoft agreed to pay $ 750 million to settle an outstanding antitrust lawsuit filed by Time Warner 's Netscape division .",
+    "original_index": 778
+  },
+  {
+    "source": "National Breast Cancer Centre chief executive Professor Christine Ewan said it was too early to quantify the risk to women .",
+    "reference": "National Breast Cancer Centre head Professor Christine Ewan said there was no need for panic .",
+    "10M": "The U.S. Supreme Court said it was first time to Hicks in the risk of women .",
+    "100M": "National Breast Research Center 's chief executive vice-chairman said it was too early to give the risk to women .",
+    "Llama_Simple": "Professor Christine Ewan, the head of the National Breast Cancer Centre, has stated that it is too early to determine the exact risk to women .",
+    "Llama_Preserve": "The head of the National Breast Cancer Centre , Professor Christine Ewan , stated that it was too early to determine the level of risk to women .",
+    "Llama_FewShot": "According to National Breast Cancer Centre chief executive Professor Christine Ewan , it is too early to estimate the risk to women .",
+    "original_index": 781
+  },
+  {
+    "source": "Ms O 'Hare will take time off from studying history at New York University to be in Australia during October for national breast cancer awareness week .",
+    "reference": "Ms O 'Hare , who has taken time out from studying history at New York University , will be in Australia throughout October in which is national breast cancer awareness week .",
+    "10M": "U.S. O 'Connor will take out of New York City to be up from the United States in New York Stock Exchange .",
+    "100M": "O 'Hare will take time off from the United States to be in Australia 's annual breast cancer group to be in Australia 's annual breast cancer group .",
+    "Llama_Simple": "Ms. O'Hare will be taking a break from her studies at New York University in October to travel to Australia for the national breast cancer awareness week.",
+    "Llama_Preserve": "Ms. O'Hare will take time off from studying history at New York University to be in Australia in October for the national breast cancer awareness week .",
+    "Llama_FewShot": "Ms. O'Hare will be taking a break from her studies at New York University in October to spend time in Australia as part of national breast cancer awareness week.",
+    "original_index": 788
+  },
+  {
+    "source": "In one scene from the film 's final script , Reagan says of AIDS patients , \" They that live in sin shall die in sin . \"",
+    "reference": "In one scene the film showed Mr Reagan 's character saying of Aids patients : \" They that live in sin shall die in sin . \"",
+    "10M": "\" It is one of 4.4 percent from the background , which is now come in place , \" he said .",
+    "100M": "In one scene from the film , Reagan says of AIDS patients , \" that live inness . \"",
+    "Llama_Simple": "In one scene from the final script of the film , Reagan is quoted as saying that those who live in sin will die in sin regarding AIDS patients .",
+    "Llama_Preserve": "In a pivotal scene from the film's final script , Reagan remarks about AIDS patients , \" Those who live in sin will die in sin . \"",
+    "Llama_FewShot": "In a pivotal scene from the film 's final script , Reagan remarks about AIDS patients , \" Those who live in sin shall die in sin . \"",
+    "original_index": 810
+  },
+  {
+    "source": "To examine the uranium enrichment program -- ElBaradei 's priority -- the IAEA says it must inspect facilities that are not officially declared as nuclear sites .",
+    "reference": "However , to verify Iran 's claims about its controversial uranium-enrichment program , the IAEA says it must inspect facilities that are not officially declared as nuclear sites .",
+    "10M": "He added that the Lewl 's servers are also expected to be disclosed , \" he said .",
+    "100M": "To see the uranium fingerprints program , ElBaradei 's decision to see that it is not officially declared nuclear sites .",
+    "Llama_Simple": "The IAEA states that in order to examine the uranium enrichment program, ElBaradei's top priority is to inspect facilities that have not been officially declared as nuclear sites.",
+    "Llama_Preserve": "To examine the uranium enrichment program -- ElBaradei's top priority , the IAEA states that it must inspect facilities that are not officially declared as nuclear sites .",
+    "Llama_FewShot": "To assess the uranium enrichment program -- ElBaradei 's top priority -- the IAEA says it needs to inspect facilities that are not officially designated as nuclear sites .",
+    "original_index": 817
+  },
+  {
+    "source": "\" To be wedged between these two monsters and hold as well as we did makes it that much better , \" said Rory Bruer , Sony head of distribution .",
+    "reference": "\" To be wedged between these two monsters and hold as well as we did makes it that much better . \"",
+    "10M": "\" We think it 's be honest with these and we can do it as well as well as if we can do it , \" he said .",
+    "100M": "\" To be honest , we 've got as well as hold as we did . \"",
+    "Llama_Simple": "Rory Bruer , head of distribution at Sony , said that being wedged between these two monsters and doing as well as they did makes it all the better .",
+    "Llama_Preserve": "\"To be wedged between these two behemoths and hold as well as we did makes it that much more appealing , \" said Rory Bruer , Sony head of distribution .",
+    "Llama_FewShot": "\" Being squeezed between these two behemoths and performing as well as we did makes it that much more impressive , \" said Rory Bruer , Sony 's head of distribution .",
+    "original_index": 821
+  },
+  {
+    "source": "The rapper 's lawyer , Mark Gann , didn 't return calls for comment .",
+    "reference": "The 27-year-old rapper 's attorney in the civil matter , Mark Gann , did not return calls for comment .",
+    "10M": "The Rev. O 't know , D. O 't know , don 't know for comment .",
+    "100M": "The singer 's lawyer , Mark Gann , did not return calls seeking comment .",
+    "Llama_Simple": "The lawyer for the rapper , Mark Gann , declined to comment .",
+    "Llama_Preserve": "The rapper 's attorney , Mark Gann , failed to respond to inquiries for comment .",
+    "Llama_FewShot": "The rapper 's attorney , Mark Gann , declined to comment .",
+    "original_index": 859
+  },
+  {
+    "source": "By March 2003 , 67 percent of broadband users connected using cable modems , compared with 28 percent using DSL .",
+    "reference": "In March 2002 , 63 percent of home broadband users connected via cable modem ; 34 percent used a DSL service .",
+    "10M": "Under the company 's shares of 12 percent of gains , compared with 13 percent of 13 percent , compared with nearly 10 percent .",
+    "100M": "According to the State Department list , 62 percent of broadband users connected with 28 percent , compared with 28 percent , compared with 28 percent .",
+    "Llama_Simple": "As of March 2003 , 67 percent of broadband users relied on cable modems , whereas 28 percent used DSL .",
+    "Llama_Preserve": "By March 2003 , 67 percent of broadband users had connected via cable modems , in contrast to 28 percent using DSL .",
+    "Llama_FewShot": "As of March 2003 , 67 percent of broadband users relied on cable modems , whereas 28 percent opted for DSL .",
+    "original_index": 864
+  },
+  {
+    "source": "\" Australians are very upset and angry by what took place . . . upset because innocent people lost their lives , \" he said .",
+    "reference": "Asked how his nation felt , he replied : \" Australians are very upset and angry by what took place . . . upset because innocent people lost their lives . \"",
+    "10M": "\"",
+    "100M": "\" They are very upset and angry at what took place , \" he said .",
+    "Llama_Simple": "\"Australians are deeply disturbed and enraged by the events that transpired , as innocent lives were lost , \" he stated .",
+    "Llama_Preserve": "\"Australians are extremely agitated and enraged by what transpired , \" he added , \" as innocent people lost their lives , \"",
+    "Llama_FewShot": "\"Australians are deeply disturbed and outraged by the events that transpired , \" he stated , adding that innocent lives were lost as a result .",
+    "original_index": 865
+  },
+  {
+    "source": "Geraldine Andrews , the pastor 's daughter-in-law , said Robinson recently took her daughter out of a mental health facility .",
+    "reference": "Geraldine Andrews , Reynolds ' daughter-in-law and a friend of Wilson 's family , said Robinson had recently taken Wilson out of a mental health facility .",
+    "10M": "He said the family 's daughter , who ran him out of her husband-year-year-year-year-year-year-year-year-old boy .",
+    "100M": "He said he took her daughter out of a mental health facility after he took her daughter out of a mental health facility .",
+    "Llama_Simple": "Geraldine Andrews, the pastor's daughter-in-law, revealed that Robinson had recently removed her daughter from a mental health facility.",
+    "Llama_Preserve": "Geraldine Andrews , the pastor 's daughter - in - law , stated that Robinson had recently removed her daughter from a mental health facility .",
+    "Llama_FewShot": "Geraldine Andrews , the pastor 's daughter - in - law , stated that Robinson had recently removed her daughter from a mental health facility .",
+    "original_index": 877
+  },
+  {
+    "source": "The number of lung transplantations also increased from 30 to 64 , and the mean waiting time on the transplant list decreased from 290 days to 87 days .",
+    "reference": "The number of lung transplants also increased from 30 to 64 and the average waiting time for a lung fell from 290 days to 87 days .",
+    "10M": "The number of Congo 's number of the number of 4 , and the same time happened to 15 years from the area .",
+    "100M": "The numbers increased from 30 to 64 , and the mean waiting time period ending June 30 to 44 days .",
+    "Llama_Simple": "The number of lung transplants rose from 30 to 64, while the average waiting time on the transplant list decreased from 290 days to 87 days.",
+    "Llama_Preserve": "The number of lung transplantations also rose from 30 to 64 , and the mean waiting time on the transplant list decreased from 290 days to 87 days .",
+    "Llama_FewShot": "The number of lung transplants rose from 30 to 64, while the average wait time on the transplant list fell from 290 days to 87 days.",
+    "original_index": 919
+  },
+  {
+    "source": "He is suspected of being a key figure in Jemaah Islamiyah , the al-Qa 'eda-linked terror group which has been blamed for the bombings .",
+    "reference": "Samudra , 32 , is suspected of being a key figure in the al-Qaida-linked terror group Jemaah Islamiyah , which has been blamed for carrying out the bombings .",
+    "10M": "He is one of a two weeks in the United States , has been disclosed in the United States that has been used for the yen .",
+    "100M": "He is suspected of being a key figure in Jemaah Islamiyah , the al-Qaida terror group that has been blamed for the bombings .",
+    "Llama_Simple": "He is considered a key figure in Jemaah Islamiyah , a terror group linked to al-Qaeda , which has been blamed for the bombings .",
+    "Llama_Preserve": "He is suspected of being a pivotal figure in Jemaah Islamiyah , the al-Qaeda-affiliated terror group that has been implicated in the bombings .",
+    "Llama_FewShot": "He is believed to be a central figure in Jemaah Islamiyah , a terror group with ties to al-Qaeda , which has been implicated in the bombings .",
+    "original_index": 928
+  },
+  {
+    "source": "Change will take time , but is necessary for the nation 's largest home improvement store chain if it is to grow amid increasing competition , chief executive Bob Nardelli said .",
+    "reference": "The change will take time , but Nardelli said it is necessary for the nation 's largest home improvement store chain if it is to grow amid increasing competition .",
+    "10M": "The company will take place for the nation 's new time , but it is to go into the U.S.0 , U.S. Supreme Court said .",
+    "100M": "According to the State Department list , it won 't take time , but is necessary for the nation 's largest home improvement .",
+    "Llama_Simple": "According to Bob Nardelli , the chief executive of the nation 's largest home improvement store chain , change will take time , but it is essential for the company to grow in a highly competitive market .",
+    "Llama_Preserve": "Change is inevitable , but it is necessary for the nation 's largest home improvement store chain to thrive amid increasing competition , according to chief executive Bob Nardelli .",
+    "Llama_FewShot": "Change will take time , but is essential for the nation 's largest home improvement store chain to grow amid increasing competition , according to chief executive Bob Nardelli .",
+    "original_index": 939
+  },
+  {
+    "source": "The new version , W32 / Sobig.C-mm , had already reached a \" high level \" outbreak status by Monday , according to security analysts .",
+    "reference": "Security analysts said the new version , W32 / Sobig.C-mm , had already reached a \" high level \" outbreak status by mid-afternoon on Monday .",
+    "10M": "In a statement , SCO 's decision on the number , had made a third quarter last year-year percent in Iraq , according to Baghdad .",
+    "100M": "The new version , W.C. , W.C. , had already reached a \" high level \" outbreak status .",
+    "Llama_Simple": "According to security analysts , the new version , W32 / Sobig.C-mm , had already reached a high level of outbreak by Monday .",
+    "Llama_Preserve": "The new version , W32 / Sobig.C-mm , had already attained a \" high level \" outbreak status by Monday , as reported by security analysts .",
+    "Llama_FewShot": "The latest version , W32 / Sobig.C-mm , had already achieved \" high-level \" outbreak status by Monday , as predicted by security analysts .",
+    "original_index": 940
+  },
+  {
+    "source": "\" From Justin to Kelly , \" starring \" American Idol \" winner Kelly Clarkson and runner-up Justin Guarini , opened at No. 11 with only $ 2.9 million .",
+    "reference": "From Justin to Kelly , a romance starring American Idol winner Kelly Clarkson and runnerup Justin Guarini , opened at No. 11 with $ 2.9-million.",
+    "10M": "In 1999 , \" The U.S.S. role , \" said at $ 1.7 million in the United States , was at $ 1.7 million .",
+    "100M": "After posting $ 1.5 million , it opened at No. 11 with only $ 2.5 million .",
+    "Llama_Simple": "The musical \" From Justin to Kelly \" , which starred American Idol winner Kelly Clarkson and runner-up Justin Guarini , debuted at number 11 and earned only $ 2.9 million .",
+    "Llama_Preserve": "\" From Justin to Kelly \" , the musical starring American Idol winner Kelly Clarkson and runner-up Justin Guarini , debuted at No. 11 with only $ 2.9 million .",
+    "Llama_FewShot": "\" From Justin to Kelly \" , a film starring American Idol winner Kelly Clarkson and runner-up Justin Guarini , debuted at No. 11 with an opening weekend gross of $ 2.9 million .",
+    "original_index": 946
+  },
+  {
+    "source": "Certain to give Democrats hope was Bush 's hypothetical matchup with a generic Democrat ; the president prevailed 43 percent to 38 percent .",
+    "reference": "In a Bush hypothetical matchup with a generic Democrat ; the president prevailed 43 to 38 percent .",
+    "10M": "The company said he was expected to raise a placebo from the town of 2 percent to $ 1 percent .",
+    "100M": "Other Democrats hope was not asked to give Democrats hope was canceled , the president said .",
+    "Llama_Simple": "A hypothetical matchup between Bush and a generic Democrat gave Democrats a glimmer of hope , as the president emerged victorious with 43 percent of the vote to 38 percent for his opponent .",
+    "Llama_Preserve": "Certain to give Democrats a glimmer of hope was Bush 's hypothetical matchup with a generic Democrat ; the president emerged victorious , prevailing 43 percent to 38 percent .",
+    "Llama_FewShot": "A hypothetical matchup between Bush and a generic Democrat was certain to give Democrats cause for optimism , as the president won 43 percent of the vote to 38 percent .",
+    "original_index": 958
+  },
+  {
+    "source": "One of the 14 Kurds pointed at the word \" refugee \" in an English / Turkish dictionary .",
+    "reference": "One man had brandished an English-Turkish dictionary and pointed to the word \" refugee \" .",
+    "10M": "One of the 1 appeared to the head of the \" an \" in an \" . \"",
+    "100M": "One of the 14 Kurds pointed at the word \" refugee \" in an English-Turkish dictionary .",
+    "Llama_Simple": "A Kurdish individual consulted an English-Turkish dictionary and pointed to the word \"refugee\".",
+    "Llama_Preserve": "One of the 14 Kurds identified the word \"refugee\" in an English / Turkish dictionary .",
+    "Llama_FewShot": "One of the 14 Kurds consulted an English / Turkish dictionary and highlighted the word \"refugee\".",
+    "original_index": 1010
+  },
+  {
+    "source": "Consumers still would have to get a descrambling security card from their cable operator to plug into the set .",
+    "reference": "To watch pay television , consumers would insert into the set a security card provided by their cable service .",
+    "10M": "It would have to try to get a portable tests from their pickup through the end of their own .",
+    "100M": "\" Qualcomm still would have to get a message from the set , \" he said .",
+    "Llama_Simple": "Consumers would still need to obtain a descrambling security card from their cable operator in order to connect the set .",
+    "Llama_Preserve": "Consumers would still need to obtain a descrambling security card from their cable operator in order to plug it into the set .",
+    "Llama_FewShot": "Consumers would still need to obtain a descrambling security card from their cable provider in order to connect the set.",
+    "original_index": 1022
+  },
+  {
+    "source": "Palm Wednesday announced plans to acquire Handspring , a company started by Jeff Hawkins , regarded by many as the father of the Palm handheld .",
+    "reference": "Palm said on Wednesday it plans to buy Handspring , a company created by renegade Palm co-founder Jeff Hawkins .",
+    "10M": "U.S. announced yesterday , a company plans to rebuild the company , a company 's U.S. role , a U.S. District of the U.S. Circuit .",
+    "100M": "It was announced yesterday that it plans to acquire Handspring , a company started by Jeffery , a company started by the end of the Bluetooth .",
+    "Llama_Simple": "Palm Wednesday revealed its intention to acquire Handspring , a company co-founded by Jeff Hawkins , widely regarded as the father of the Palm handheld .",
+    "Llama_Preserve": "Palm Wednesday revealed plans to acquire Handspring , a company co-founded by Jeff Hawkins , widely regarded by many as the father of the Palm handheld .",
+    "Llama_FewShot": "Palm Wednesday announced plans to acquire Handspring , a company co-founded by Jeff Hawkins , widely regarded as the father of the Palm handheld .",
+    "original_index": 1034
+  },
+  {
+    "source": "Colin Powell , the Secretary of State , said contacts with Iran would not stop .",
+    "reference": "Secretary of State Colin Powell said yesterday that contacts with Iran would continue .",
+    "10M": "He said the House of State Court would not get in .",
+    "100M": "The Secretary of State , the Secretary of State , said the Secretary of State , the Secretary of State , did not stop .",
+    "Llama_Simple": "Colin Powell , the US Secretary of State , stated that contacts with Iran would continue .",
+    "Llama_Preserve": "Colin Powell , the U.S. Secretary of State , stated that contacts with Iran would not cease .",
+    "Llama_FewShot": "Colin Powell , the U.S. Secretary of State , stated that contacts with Iran would not cease .",
+    "original_index": 1043
+  },
+  {
+    "source": "And when asked if he felt regret or guilt about the attack his answer was an adamant \" no \" .",
+    "reference": "Asked if he felt any regret about theOctober 12 attack , the answer was an adamant \" no \" .",
+    "10M": "On Wednesday , when he said he ordered him at the attack was \" an interview . \"",
+    "100M": "And when asked him if he felt regretfully about the attack his answer was an affront .",
+    "Llama_Simple": "When questioned about feeling regret or guilt over the attack, his response was a firm \"no\".",
+    "Llama_Preserve": "When questioned about feeling regret or guilt over the attack, his response was a firm \" no \" .",
+    "Llama_FewShot": "When asked if he felt remorse or guilt about the attack, his response was a firm \"no\".",
+    "original_index": 1093
+  },
+  {
+    "source": "Several witnesses have told the court Bashir heads JI , accused of seeking to create an Islamic state in the region .",
+    "reference": "A number of witnesses have told the court Bashir heads Jemaah Islamiah , accused of wanting an Islamic state in the region .",
+    "10M": "Many of the court , have concluded that Selenski 's version of an ambush in the region .",
+    "100M": "Several witnesses have told the court Bashir heads JI , accused of seeking to create a Muslim state in the region .",
+    "Llama_Simple": "Several witnesses have testified that Bashir is the head of JI, which is accused of seeking to establish an Islamic state in the region .",
+    "Llama_Preserve": "Several witnesses have informed the court that Bashir is the head of JI , which is accused of seeking to establish an Islamic state in the region .",
+    "Llama_FewShot": "Several witnesses have testified before the court that Bashir, the head of JI, is accused of seeking to establish an Islamic state in the region.",
+    "original_index": 1098
+  },
+  {
+    "source": "The number of public WiFi hot spots will grow from the current 50,000 to 85,000 by the end of 2004 , IDC said .",
+    "reference": "Wi-Fi will continue to grow : The number of public Wi-Fi hot spots will grow from the current 50,000 , to 85,000 by the end of the year , IDC said .",
+    "10M": "The number of years ago , it will get from more than 2,000 to come from the year , according to the end of 2004 .",
+    "100M": "The number of public places will grow from the current 50,000 to 60,000 .",
+    "Llama_Simple": "According to IDC , the number of public WiFi hot spots is expected to increase from its current level of 50,000 to 85,000 by the end of 2004 .",
+    "Llama_Preserve": "The number of public WiFi hotspots is expected to increase from its current 50,000 to 85,000 by the end of 2004 , according to IDC .",
+    "Llama_FewShot": "According to IDC , the number of public WiFi hot spots is expected to expand from its current 50,000 to 85,000 by the end of 2004 .",
+    "original_index": 1103
+  },
+  {
+    "source": "Founders of the group are Matsushita Electric , Sony , Hitachi , NEC , Royal Philips Electronics , Samsung , Sharp and Toshiba .",
+    "reference": "CELF 's founding members are Hitachi , Matsushita , NEC , Philips , Samsung , Sharp , Sony , and Toshiba .",
+    "10M": "The group of the risk of the world , Ala , Sapp are looking out of the United States , Ala .",
+    "100M": "The company also said its group is showing its version of its version of its version of its version of its version .",
+    "Llama_Simple": "The founding companies of the group are Matsushita Electric, Sony, Hitachi, NEC, Royal Philips Electronics, Samsung, and Toshiba.",
+    "Llama_Preserve": "Founders of the group include Matsushita Electric , Sony , Hitachi , NEC , Royal Philips Electronics , Samsung , and Toshiba .",
+    "Llama_FewShot": "The founding companies include Matsushita Electric, Sony, Hitachi, NEC, Royal Philips Electronics, Samsung, Sharp, and Toshiba.",
+    "original_index": 1116
+  },
+  {
+    "source": "Immunizing mice with pneumococcusleads tothe generation of antibodies that the researchers think lead to the protection from heart disease , he said .",
+    "reference": "Immunizing mice with pneumococcus means generating antibodies that the researchers believe lead to the protection from heart disease , he said .",
+    "10M": "After for example , which he said to be out of the world 's efforts to the world , he said .",
+    "100M": "Analysts with neighbors that the researchers think lead to the protection from heart disease , he said .",
+    "Llama_Simple": "According to the researcher , immunizing mice with pneumococcus results in the production of antibodies that are believed to offer protection against heart disease .",
+    "Llama_Preserve": "Immunizing mice with pneumococcus results in the production of antibodies , according to researchers , which they believe lead to protection from heart disease , he said .",
+    "Llama_FewShot": "Immunizing mice with pneumococcus results in the production of antibodies , according to researchers , which they believe may offer protection against heart disease , he said .",
+    "original_index": 1130
+  },
+  {
+    "source": "Remaining shares will be held by QVC 's management .",
+    "reference": "Members of the QVC management team hold the remaining shares .",
+    "10M": "With the United States will be held by United States 's United States 's United States 's United States 's United States .",
+    "100M": "Remus 's management will be held at the end of his management .",
+    "Llama_Simple": "The remaining shares will be retained by QVC's management.",
+    "Llama_Preserve": "Remaining shares will be retained by QVC 's management .",
+    "Llama_FewShot": "Remaining shares will be retained by QVC 's management.",
+    "original_index": 1140
+  }
+]
