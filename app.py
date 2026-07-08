@@ -14,6 +14,45 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# 2. File Paths
+DATABASE_PATH = "evaluation_batch_100.json"
+
+# 3. Data Loading Functions
+@st.cache_data
+def load_database():
+    """Load the central database of sentences."""
+    if not os.path.exists(DATABASE_PATH):
+        st.error(f"Error: Database file `{DATABASE_PATH}` not found in the current directory.")
+        return []
+    try:
+        with open(DATABASE_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data
+    except Exception as e:
+        st.error(f"Error loading database: {str(e)}")
+        return []
+
+def escape_html_display(text):
+    if not isinstance(text, str):
+        return text
+    # Convert characters to HTML entities so markdown parser doesn't touch them
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("$", "&#36;")
+        .replace("_", "&#95;")
+        .replace("*", "&#42;")
+    )
+
+# Load data
+database = load_database()
+total_sentences = len(database)
+# Map original_index to current item for fast lookup
+db_by_original_index = {item.get("original_index", i): item for i, item in enumerate(database)} if total_sentences > 0 else {}
+candidate_keys = [k for k in database[0].keys() if k not in ["source", "original_index"]] if total_sentences > 0 else []
+
+
 # --- DATABASE PERSISTENCE SETUP ---
 conn = st.connection("sql", type="sql")
 
@@ -105,7 +144,7 @@ def check_token_exists(token):
     return count > 0
 
 # --- ACCESS CONTROL CONFIGURATION (2-GATE STATE MACHINE) ---
-CLASSROOM_PASSWORDS = {"TUM2026", "FRASER"}
+CLASSROOM_PASSWORDS = {"TUM2026"}
 
 if "gate1_unlocked" not in st.session_state:
     st.session_state.gate1_unlocked = False
@@ -257,44 +296,6 @@ st.markdown("""
     }
 </style>
 """, unsafe_allow_html=True)
-
-# 2. File Paths
-DATABASE_PATH = "evaluation_batch_100.json"
-
-# 3. Data Loading Functions
-@st.cache_data
-def load_database():
-    """Load the central database of sentences."""
-    if not os.path.exists(DATABASE_PATH):
-        st.error(f"Error: Database file `{DATABASE_PATH}` not found in the current directory.")
-        return []
-    try:
-        with open(DATABASE_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data
-    except Exception as e:
-        st.error(f"Error loading database: {str(e)}")
-        return []
-
-def escape_html_display(text):
-    if not isinstance(text, str):
-        return text
-    # Convert characters to HTML entities so markdown parser doesn't touch them
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("$", "&#36;")
-        .replace("_", "&#95;")
-        .replace("*", "&#42;")
-    )
-
-# Load data
-database = load_database()
-total_sentences = len(database)
-# Map original_index to current item for fast lookup
-db_by_original_index = {item.get("original_index", i): item for i, item in enumerate(database)} if total_sentences > 0 else {}
-candidate_keys = [k for k in database[0].keys() if k not in ["source", "original_index"]] if total_sentences > 0 else []
 
 # --- BACKEND CONFIGURATION ---
 ADMIN_PASSWORD = "admin"
@@ -526,17 +527,18 @@ else:
             # Reset ratings
             st.markdown("<br><br>", unsafe_allow_html=True)
             if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
-                conn = sqlite3.connect(DB_PATH, timeout=10.0)
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM ratings")
-                conn.commit()
-                conn.close()
+                with conn.session as s:
+                    s.execute(
+                        text("DELETE FROM ratings WHERE token = :token"),
+                        params={"token": st.session_state.token}
+                    )
+                    s.commit()
                 st.session_state.scores = {}
                 st.session_state.touched_sliders = {}
                 for k in list(st.session_state.keys()):
                     if k.startswith("slider_"):
                         del st.session_state[k]
-                st.toast("All database ratings have been reset!", icon="✅")
+                st.toast("Your ratings have been reset!", icon="✅")
                 st.rerun()
 
     # --- MAIN CONTENT AREA ---

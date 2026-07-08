@@ -102,3 +102,4 @@ scores.json
 *.csv
 # *.json
 central_database.json
+.streamlit/secrets.toml
