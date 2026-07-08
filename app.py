@@ -4,7 +4,7 @@ import json
 import os
 import pandas as pd
 import random
-import sqlite3
+from sqlalchemy import text
 
 # 1. Page Configuration and Theme Styling (Must be the first Streamlit command)
 st.set_page_config(
@@ -14,35 +14,70 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# 2. File Paths
+DATABASE_PATH = "evaluation_batch_100.json"
+
+# 3. Data Loading Functions
+@st.cache_data
+def load_database():
+    """Load the central database of sentences."""
+    if not os.path.exists(DATABASE_PATH):
+        st.error(f"Error: Database file `{DATABASE_PATH}` not found in the current directory.")
+        return []
+    try:
+        with open(DATABASE_PATH, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return data
+    except Exception as e:
+        st.error(f"Error loading database: {str(e)}")
+        return []
+
+def escape_html_display(text):
+    if not isinstance(text, str):
+        return text
+    # Convert characters to HTML entities so markdown parser doesn't touch them
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("$", "&#36;")
+        .replace("_", "&#95;")
+        .replace("*", "&#42;")
+    )
+
+# Load data
+database = load_database()
+total_sentences = len(database)
+# Map original_index to current item for fast lookup
+db_by_original_index = {item.get("original_index", i): item for i, item in enumerate(database)} if total_sentences > 0 else {}
+candidate_keys = [k for k in database[0].keys() if k not in ["source", "original_index"]] if total_sentences > 0 else []
+
+
 # --- DATABASE PERSISTENCE SETUP ---
-DB_PATH = "evaluation.db"
+conn = st.connection("sql", type="sql")
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS ratings (
-            username TEXT,
-            sentence_id INTEGER,
-            model_name TEXT,
-            score INTEGER,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (username, sentence_id, model_name)
-        )
-    """)
-    conn.commit()
-    conn.close()
+    with conn.session as s:
+        s.execute(text("""
+            CREATE TABLE IF NOT EXISTS ratings (
+                token VARCHAR(64) NOT NULL,
+                sentence_id INTEGER NOT NULL,
+                model_name VARCHAR(255) NOT NULL,
+                score INTEGER NOT NULL,
+                timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                PRIMARY KEY (token, sentence_id, model_name)
+            );
+        """))
+        s.commit()
 
-def load_ratings_from_db(username):
+def load_ratings_from_db(token):
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT sentence_id, model_name, score FROM ratings WHERE username = ?",
-        (username,)
-    )
-    rows = cursor.fetchall()
-    conn.close()
+    with conn.session as s:
+        result = s.execute(
+            text("SELECT sentence_id, model_name, score FROM ratings WHERE token = :token"),
+            params={"token": token}
+        )
+        rows = result.fetchall()
     
     scores = {}
     for sentence_id, model_name, score in rows:
@@ -52,56 +87,159 @@ def load_ratings_from_db(username):
         scores[s_id_str][model_name] = score
     return scores
 
-def save_ratings_to_db(username, sentence_id, model_scores):
+def save_ratings_to_db(token, sentence_id, model_scores):
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    for model_name, score in model_scores.items():
-        cursor.execute(
-            """
-            INSERT OR REPLACE INTO ratings (username, sentence_id, model_name, score)
-            VALUES (?, ?, ?, ?)
-            """,
-            (username, int(sentence_id), model_name, int(score))
+    with conn.session as s:
+        for model_name, score in model_scores.items():
+            s.execute(
+                text("""
+                    INSERT INTO ratings (token, sentence_id, model_name, score, timestamp)
+                    VALUES (:token, :sentence_id, :model_name, :score, NOW())
+                    ON CONFLICT (token, sentence_id, model_name)
+                    DO UPDATE SET score = EXCLUDED.score, timestamp = EXCLUDED.timestamp;
+                """),
+                params={
+                    "token": token,
+                    "sentence_id": int(sentence_id),
+                    "model_name": model_name,
+                    "score": int(score)
+                }
+            )
+        s.commit()
+
+def save_single_rating_to_db(token, sentence_id, model_name, score):
+    init_db()
+    with conn.session as s:
+        s.execute(
+            text("""
+                INSERT INTO ratings (token, sentence_id, model_name, score, timestamp)
+                VALUES (:token, :sentence_id, :model_name, :score, NOW())
+                ON CONFLICT (token, sentence_id, model_name)
+                DO UPDATE SET score = EXCLUDED.score, timestamp = EXCLUDED.timestamp;
+            """),
+            params={
+                "token": token,
+                "sentence_id": int(sentence_id),
+                "model_name": model_name,
+                "score": int(score)
+            }
         )
-    conn.commit()
-    conn.close()
+        s.commit()
 
 def load_all_ratings_from_db():
     init_db()
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT username, sentence_id, model_name, score FROM ratings")
-    rows = cursor.fetchall()
-    conn.close()
+    with conn.session as s:
+        result = s.execute(text("SELECT token, sentence_id, model_name, score FROM ratings"))
+        rows = result.fetchall()
     return rows
 
-# --- ACCESS CONTROL CONFIGURATION ---
-ACCESS_PASSCODE = "llm_score_2026"
+def check_token_exists(token):
+    init_db()
+    with conn.session as s:
+        result = s.execute(
+            text("SELECT COUNT(*) FROM ratings WHERE token = :token"),
+            params={"token": token}
+        )
+        count = result.scalar()
+    return count > 0
+
+# --- ACCESS CONTROL CONFIGURATION (2-GATE STATE MACHINE) ---
+CLASSROOM_PASSWORDS = {"TUM2026"}
+
+if "gate1_unlocked" not in st.session_state:
+    st.session_state.gate1_unlocked = False
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
 
-if not st.session_state.authenticated:
-    st.markdown("<h2 style='text-align: center; margin-top: 100px;'>🔒 Access Restricted</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Please enter the access passcode and your username to unlock the evaluation system.</p>", unsafe_allow_html=True)
+if "token" not in st.session_state:
+    st.session_state.token = ""
+
+if "new_token_created" not in st.session_state:
+    st.session_state.new_token_created = None
+
+def clear_evaluation_session_states():
+    for k in list(st.session_state.keys()):
+        if k.startswith("slider_") or k.startswith("container_"):
+            del st.session_state[k]
+    if "touched_sliders" in st.session_state:
+        del st.session_state.touched_sliders
+
+# Gate 1: Classroom Activation Protection (Anti-Bot Barrier)
+if not st.session_state.gate1_unlocked:
+    st.markdown("<h2 style='text-align: center; margin-top: 100px;'>🔒 Classroom Activation Protection</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Please enter the Classroom Activation Password to access the evaluation system.</p>", unsafe_allow_html=True)
     
     col_l, col_m, col_r = st.columns([1, 2, 1])
     with col_m:
-        username_input = st.text_input("Username:", key="access_username_input")
-        passcode_input = st.text_input("Passcode:", type="password", key="access_passcode_input")
+        activation_input = st.text_input("Enter Classroom Activation Password:", type="password", key="activation_input")
         if st.button("Unlock System", use_container_width=True):
-            if not username_input.strip():
-                st.error("Please enter a username.")
-            elif passcode_input == ACCESS_PASSCODE:
-                st.session_state.authenticated = True
-                st.session_state.username = username_input.strip()
-                # Initialize user scores from database
-                st.session_state.scores = load_ratings_from_db(st.session_state.username)
-                st.success("Access granted!")
+            if activation_input.strip() in CLASSROOM_PASSWORDS:
+                st.session_state.gate1_unlocked = True
+                st.success("System unlocked! Proceed to login/registration.")
                 st.rerun()
+            elif not activation_input.strip():
+                st.error("Please enter the password.")
             else:
-                st.error("Incorrect passcode. Access denied.")
+                st.error("Incorrect password. Access denied.")
+    st.stop()
+
+# Gate 2: Token Branching (Reconnection vs. Fresh Start)
+if not st.session_state.authenticated:
+    st.markdown("<h2 style='text-align: center; margin-top: 100px;'>🔑 Evaluator Authentication</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center;'>Welcome to the LLM Sentence Scorer. Please reconnect using your existing token or start a new session.</p>", unsafe_allow_html=True)
+    
+    col_l, col_m, col_r = st.columns([1, 2, 1])
+    with col_m:
+        tab_reconnect, tab_new = st.tabs(["🔌 Seamless Reconnection", "➕ New Evaluator"])
+        
+        with tab_reconnect:
+            st.markdown("### Path A: Reconnect")
+            token_input = st.text_input(
+                "Enter your 6-character Token:", 
+                key="token_reconnect_input",
+                placeholder="XXXXXX"
+            ).strip().upper()
+            
+            if st.button("Reconnect Session", use_container_width=True):
+                if len(token_input) != 6:
+                    st.error("Please enter a valid 6-character token.")
+                elif check_token_exists(token_input):
+                    st.session_state.authenticated = True
+                    st.session_state.token = token_input
+                    clear_evaluation_session_states()
+                    st.session_state.scores = load_ratings_from_db(token_input)
+                    
+                    # Restore session navigation pointer
+                    if total_sentences > 0:
+                        st.session_state.session_indices = list(range(total_sentences))
+                        st.session_state.index_ptr = 0
+                        for ptr, s_idx in enumerate(st.session_state.session_indices):
+                            item = database[s_idx]
+                            db_idx = item.get("original_index", s_idx)
+                            if str(db_idx) not in st.session_state.scores:
+                                st.session_state.index_ptr = ptr
+                                break
+                    st.success("Welcome back! Reconnected successfully.")
+                    st.rerun()
+                else:
+                    st.error("No historical ratings found for this token. If you are new, please use the 'New Evaluator' tab.")
+                    
+        with tab_new:
+            st.markdown("### Path B: Fresh Start")
+            st.write("If you don't have a token, click below to generate one anonymously.")
+            if st.button("No, I am a new evaluator. Generate a new Token", use_container_width=True):
+                import uuid
+                new_tok = uuid.uuid4().hex[:6].upper()
+                st.session_state.authenticated = True
+                st.session_state.token = new_tok
+                st.session_state.new_token_created = new_tok
+                clear_evaluation_session_states()
+                st.session_state.scores = {}
+                st.session_state.index_ptr = 0
+                st.success("Token generated successfully!")
+                st.rerun()
+                
     st.stop()
 
 # Custom clean CSS styles for a polished and minimal look
@@ -159,45 +297,14 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 2. File Paths
-DATABASE_PATH = "evaluation_batch_100.json"
-
-# 3. Data Loading Functions
-@st.cache_data
-def load_database():
-    """Load the central database of sentences."""
-    if not os.path.exists(DATABASE_PATH):
-        st.error(f"Error: Database file `{DATABASE_PATH}` not found in the current directory.")
-        return []
-    try:
-        with open(DATABASE_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return data
-    except Exception as e:
-        st.error(f"Error loading database: {str(e)}")
-        return []
-
-def escape_html_display(text):
-    if not isinstance(text, str):
-        return text
-    # Convert characters to HTML entities so markdown parser doesn't touch them
-    return text.replace("$", "&#36;").replace("_", "&#95;").replace("*", "&#42;")
-
-# Load data
-database = load_database()
-total_sentences = len(database)
-# Map original_index to current item for fast lookup
-db_by_original_index = {item.get("original_index", i): item for i, item in enumerate(database)} if total_sentences > 0 else {}
-candidate_keys = [k for k in database[0].keys() if k not in ["source", "original_index"]] if total_sentences > 0 else []
-
 # --- BACKEND CONFIGURATION ---
 ADMIN_PASSWORD = "admin"
 BLIND_RATING = True  # Hide model names and randomize candidate display order
 
 # 4. State Initialization
 if "scores" not in st.session_state:
-    if st.session_state.get("authenticated") and "username" in st.session_state:
-        st.session_state.scores = load_ratings_from_db(st.session_state.username)
+    if st.session_state.get("authenticated") and "token" in st.session_state:
+        st.session_state.scores = load_ratings_from_db(st.session_state.token)
     else:
         st.session_state.scores = {}
 
@@ -228,11 +335,25 @@ if "shuffled_candidates" not in st.session_state:
     st.session_state.shuffled_candidates = {}
 
 # 5. Session State Navigation Functions
-def mark_slider_touched(db_idx, key):
+def handle_slider_change(db_idx, key):
     if "touched_sliders" not in st.session_state:
         st.session_state.touched_sliders = {}
     st.session_state.touched_sliders[f"{db_idx}_{key}"] = True
     st.session_state.show_toast = True
+    
+    # Get value from slider key
+    slider_key = f"slider_{db_idx}_{key}"
+    score = st.session_state.get(slider_key, 0)
+    
+    # Save to DB
+    token = st.session_state.get("token", "anonymous")
+    save_single_rating_to_db(token, db_idx, key, score)
+    
+    # Update local session scores
+    db_idx_str = str(db_idx)
+    if db_idx_str not in st.session_state.scores:
+        st.session_state.scores[db_idx_str] = {}
+    st.session_state.scores[db_idx_str][key] = score
 
 def next_sentence():
     if "session_indices" not in st.session_state:
@@ -243,23 +364,14 @@ def next_sentence():
     
     # Check if all candidates for the current sentence are rated/touched
     all_rated = True
-    current_ratings = {}
     for k in candidate_keys:
         touch_key = f"{db_idx}_{k}"
         is_touched = st.session_state.get("touched_sliders", {}).get(touch_key, False)
         if not is_touched:
             all_rated = False
             break
-        slider_key = f"slider_{db_idx}_{k}"
-        current_ratings[k] = st.session_state.get(slider_key, 0)
-        
+            
     if all_rated:
-        # Save to database
-        username = st.session_state.get("username", "anonymous")
-        save_ratings_to_db(username, db_idx, current_ratings)
-        # Update local session scores
-        st.session_state.scores[str(db_idx)] = current_ratings
-        
         # Navigate to next
         if st.session_state.index_ptr < len(st.session_state.session_indices) - 1:
             st.session_state.index_ptr += 1
@@ -273,28 +385,6 @@ def next_sentence():
 def prev_sentence():
     if "session_indices" not in st.session_state:
         return
-    ptr = st.session_state.index_ptr
-    s_idx = st.session_state.session_indices[ptr]
-    db_idx = database[s_idx].get("original_index", s_idx)
-    
-    # Check if all candidates for the current sentence are rated
-    all_rated = True
-    current_ratings = {}
-    for k in candidate_keys:
-        touch_key = f"{db_idx}_{k}"
-        is_touched = st.session_state.get("touched_sliders", {}).get(touch_key, False)
-        if not is_touched:
-            all_rated = False
-            break
-        slider_key = f"slider_{db_idx}_{k}"
-        current_ratings[k] = st.session_state.get(slider_key, 0)
-        
-    if all_rated:
-        # Save to database
-        username = st.session_state.get("username", "anonymous")
-        save_ratings_to_db(username, db_idx, current_ratings)
-        st.session_state.scores[str(db_idx)] = current_ratings
-        
     # Go to prev regardless of validation status
     if st.session_state.index_ptr > 0:
         st.session_state.index_ptr -= 1
@@ -306,28 +396,6 @@ def prev_sentence():
 def go_to_ptr(ptr):
     if "session_indices" not in st.session_state:
         return
-    current_ptr = st.session_state.index_ptr
-    s_idx = st.session_state.session_indices[current_ptr]
-    db_idx = database[s_idx].get("original_index", s_idx)
-    
-    # Check if all candidates for the current sentence are rated
-    all_rated = True
-    current_ratings = {}
-    for k in candidate_keys:
-        touch_key = f"{db_idx}_{k}"
-        is_touched = st.session_state.get("touched_sliders", {}).get(touch_key, False)
-        if not is_touched:
-            all_rated = False
-            break
-        slider_key = f"slider_{db_idx}_{k}"
-        current_ratings[k] = st.session_state.get(slider_key, 0)
-        
-    if all_rated:
-        # Save to database
-        username = st.session_state.get("username", "anonymous")
-        save_ratings_to_db(username, db_idx, current_ratings)
-        st.session_state.scores[str(db_idx)] = current_ratings
-        
     # Go to target ptr regardless of validation status
     if 0 <= ptr < len(st.session_state.session_indices):
         st.session_state.index_ptr = ptr
@@ -338,6 +406,16 @@ def go_to_ptr(ptr):
 
 # Main structure
 st.markdown("<h3 style='text-align: center; margin-top: -0px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
+
+if st.session_state.get("new_token_created"):
+    st.info(
+        f"🔑 **Your anonymous evaluation token is: `{st.session_state.new_token_created}`**\n\n"
+        "Please copy and save it! You will need it to rejoin this session if your browser crashes or if you change devices.",
+        icon="⚠️"
+    )
+    if st.button("I have copied my token. Dismiss this notice.", type="primary", key="dismiss_token_btn"):
+        st.session_state.new_token_created = None
+        st.rerun()
 
 if total_sentences == 0:
     st.info("Please make sure `central_database.json` contains valid sentence objects and is in the same directory.")
@@ -406,13 +484,13 @@ else:
             # Pull all records from database for admin export
             all_rows = load_all_ratings_from_db()
             export_dict = {}
-            for user, s_idx, model, score in all_rows:
-                if user not in export_dict:
-                    export_dict[user] = {}
+            for token, s_idx, model, score in all_rows:
+                if token not in export_dict:
+                    export_dict[token] = {}
                 s_idx_str = str(s_idx)
-                if s_idx_str not in export_dict[user]:
-                    export_dict[user][s_idx_str] = {}
-                export_dict[user][s_idx_str][model] = score
+                if s_idx_str not in export_dict[token]:
+                    export_dict[token][s_idx_str] = {}
+                export_dict[token][s_idx_str][model] = score
             
             # Download JSON
             json_scores = json.dumps(export_dict, indent=2, ensure_ascii=False)
@@ -427,9 +505,9 @@ else:
             # Download CSV
             if all_rows:
                 rows = []
-                for user, s_idx, model, score in all_rows:
+                for token, s_idx, model, score in all_rows:
                     rows.append({
-                        "username": user,
+                        "token": token,
                         "sentence_id": s_idx,
                         "model_name": model,
                         "score": score,
@@ -449,17 +527,18 @@ else:
             # Reset ratings
             st.markdown("<br><br>", unsafe_allow_html=True)
             if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
-                conn = sqlite3.connect(DB_PATH)
-                cursor = conn.cursor()
-                cursor.execute("DELETE FROM ratings")
-                conn.commit()
-                conn.close()
+                with conn.session as s:
+                    s.execute(
+                        text("DELETE FROM ratings WHERE token = :token"),
+                        params={"token": st.session_state.token}
+                    )
+                    s.commit()
                 st.session_state.scores = {}
                 st.session_state.touched_sliders = {}
                 for k in list(st.session_state.keys()):
                     if k.startswith("slider_"):
                         del st.session_state[k]
-                st.toast("All database ratings have been reset!", icon="✅")
+                st.toast("Your ratings have been reset!", icon="✅")
                 st.rerun()
 
     # --- MAIN CONTENT AREA ---
@@ -567,7 +646,7 @@ else:
                         step=1,
                         key=slider_key,
                         label_visibility="collapsed",
-                        on_change=mark_slider_touched,
+                        on_change=handle_slider_change,
                         args=(db_idx, key)
                     )
             updated_item_scores[key] = score
@@ -632,9 +711,9 @@ else:
         else:
             # Prepare data
             scores_list = []
-            for user, s_idx, model, score in all_rows:
+            for token, s_idx, model, score in all_rows:
                 scores_list.append({
-                    "Username": user,
+                    "Token": token,
                     "Sentence Index": s_idx,
                     "Model": model,
                     "Score": score
