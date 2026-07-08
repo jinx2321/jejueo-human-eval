@@ -100,5 +100,5 @@ ActiveState.venv/
 # Local data & evaluations
 scores.json
 *.csv
-*.json
-!central_database.json
+# *.json
+central_database.json
