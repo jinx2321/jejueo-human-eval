@@ -35,7 +35,9 @@ jobs:
             - [x] Branch pushed to remote
             - [ ] CI Pipeline validation & Pytest suite
 
-            Once merged into \`main\`, **Streamlit Community Cloud CD** will automatically deploy the latest changes to production."
+            Once merged into \`main\`, **Streamlit Community Cloud CD** will automatically deploy the latest changes to production." || {
+              echo "⚠️ Notice: To allow GitHub Actions to create Pull Requests, enable 'Allow GitHub Actions to create and approve pull requests' in GitHub Repository Settings -> Actions -> General -> Workflow permissions."
+            }
           else
             echo "Pull Request #$PR_EXISTS already exists for branch ${{ github.ref_name }}."
           fi
