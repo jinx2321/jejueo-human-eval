@@ -115,3 +115,12 @@ def check_token_exists(token):
         )
         count = result.scalar()
     return count > 0
+
+def delete_ratings_by_token(token):
+    init_db()
+    with conn.session as s:
+        s.execute(
+            text("DELETE FROM ratings WHERE token = :token"),
+            params={"token": token}
+        )
+        s.commit()

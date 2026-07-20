@@ -17,7 +17,8 @@ from src.db import (
     save_single_rating_to_db,
     load_all_ratings_from_db,
     load_ratings_rows_by_token,
-    check_token_exists
+    check_token_exists,
+    delete_ratings_by_token
 )
 
 # 1. Page Configuration and Theme Styling (Must be the first Streamlit command)
@@ -472,12 +473,7 @@ else:
             # Reset ratings
             st.markdown("<br><br>", unsafe_allow_html=True)
             if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
-                with conn.session as s:
-                    s.execute(
-                        text("DELETE FROM ratings WHERE token = :token"),
-                        params={"token": st.session_state.token}
-                    )
-                    s.commit()
+                delete_ratings_by_token(st.session_state.token)
                 st.session_state.scores = {}
                 st.session_state.touched_sliders = {}
                 for k in list(st.session_state.keys()):
