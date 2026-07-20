@@ -18,7 +18,8 @@ from src.db import (
     load_all_ratings_from_db,
     load_ratings_rows_by_token,
     check_token_exists,
-    delete_ratings_by_token
+    delete_ratings_by_token,
+    batch_upsert_ratings_to_db
 )
 
 # 1. Page Configuration and Theme Styling (Must be the first Streamlit command)
@@ -248,6 +249,15 @@ if "scores" not in st.session_state:
     else:
         st.session_state.scores = {}
 
+if "pending_updates" not in st.session_state:
+    st.session_state.pending_updates = {}
+
+if "sync_status" not in st.session_state:
+    st.session_state.sync_status = "🟢 Synced to database"
+
+if "last_sync_time" not in st.session_state:
+    st.session_state.last_sync_time = time.time()
+
 if "show_warning" not in st.session_state:
     st.session_state.show_warning = False
 
@@ -274,7 +284,42 @@ else:
 if "shuffled_candidates" not in st.session_state:
     st.session_state.shuffled_candidates = {}
 
-# 5. Session State Navigation Functions
+# 5. Session State Navigation & Sync Functions
+def flush_pending_ratings(force=False):
+    """
+    Flushes pending memory updates to PostgreSQL via an atomic batch UPSERT.
+    Status transitions:
+      🟡 Pending local changes -> 🔄 Syncing -> 🟢 Synced to database (or 🔴 Sync failed)
+    """
+    pending = st.session_state.get("pending_updates", {})
+    if not pending:
+        if st.session_state.get("sync_status") == "🟡 Pending local changes":
+            st.session_state.sync_status = "🟢 Synced to database"
+        return
+        
+    token = st.session_state.get("token")
+    if not token or not st.session_state.get("authenticated"):
+        return
+
+    now = time.time()
+    last_sync = st.session_state.get("last_sync_time", 0)
+    if not force and (now - last_sync < 0.8):
+        return
+
+    st.session_state.sync_status = "🔄 Syncing"
+    updates_list = list(pending.values())
+    
+    try:
+        batch_upsert_ratings_to_db(token, updates_list)
+        for item in updates_list:
+            key = (item["sentence_id"], item["model_name"])
+            st.session_state.pending_updates.pop(key, None)
+            
+        st.session_state.sync_status = "🟢 Synced to database"
+        st.session_state.last_sync_time = time.time()
+    except Exception as e:
+        st.session_state.sync_status = "🔴 Sync failed"
+
 def handle_slider_change(db_idx, key):
     if "touched_sliders" not in st.session_state:
         st.session_state.touched_sliders = {}
@@ -285,17 +330,27 @@ def handle_slider_change(db_idx, key):
     slider_key = f"slider_{db_idx}_{key}"
     score = st.session_state.get(slider_key, 0)
     
-    # Save to DB
-    token = st.session_state.get("token", "anonymous")
-    save_single_rating_to_db(token, db_idx, key, score)
-    
-    # Update local session scores
+    # 1. Update local session scores in memory (0ms lag UI response)
     db_idx_str = str(db_idx)
     if db_idx_str not in st.session_state.scores:
         st.session_state.scores[db_idx_str] = {}
     st.session_state.scores[db_idx_str][key] = score
+    
+    # 2. Queue pending update with timestamp for debounced batch flush
+    if "pending_updates" not in st.session_state:
+        st.session_state.pending_updates = {}
+    st.session_state.pending_updates[(db_idx, key)] = {
+        "sentence_id": db_idx,
+        "model_name": key,
+        "score": score,
+        "timestamp": time.time()
+    }
+    
+    # 3. Transition status to pending local changes
+    st.session_state.sync_status = "🟡 Pending local changes"
 
 def next_sentence():
+    flush_pending_ratings(force=True)
     if "session_indices" not in st.session_state:
         return
     ptr = st.session_state.index_ptr
@@ -323,6 +378,7 @@ def next_sentence():
         st.session_state.show_warning = True
 
 def prev_sentence():
+    flush_pending_ratings(force=True)
     if "session_indices" not in st.session_state:
         return
     # Go to prev regardless of validation status
@@ -334,6 +390,7 @@ def prev_sentence():
     st.session_state.show_warning = False
 
 def go_to_ptr(ptr):
+    flush_pending_ratings(force=True)
     if "session_indices" not in st.session_state:
         return
     # Go to target ptr regardless of validation status
@@ -372,7 +429,15 @@ else:
             st.subheader("🔑 Evaluator Token")
             st.code(st.session_state.token, language=None)
             st.caption("Copy your token to reconnect on other devices.")
+            
+            # Status Indicator Badge
+            status_text = st.session_state.get("sync_status", "🟢 Synced to database")
+            st.markdown(f"**Database Sync Status:**")
+            st.info(f"{status_text}")
             st.markdown("---")
+
+        # Check periodic auto-sync flush (>0.8s window)
+        flush_pending_ratings(force=False)
         
         # Admin Access Passcode
         st.subheader("🔑 Admin Access")
@@ -426,6 +491,9 @@ else:
             st.markdown("---")
             st.subheader("💾 Export & Data Management")
             
+            # Flush any pending local changes before building export data
+            flush_pending_ratings(force=True)
+            
             # Pull records exclusively for active evaluator token
             current_tok = st.session_state.get("token", "")
             token_rows = load_ratings_rows_by_token(current_tok) if current_tok else []
@@ -473,6 +541,7 @@ else:
             # Reset ratings
             st.markdown("<br><br>", unsafe_allow_html=True)
             if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
+                flush_pending_ratings(force=True)
                 delete_ratings_by_token(st.session_state.token)
                 st.session_state.scores = {}
                 st.session_state.touched_sliders = {}

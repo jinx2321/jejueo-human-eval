@@ -124,3 +124,29 @@ def delete_ratings_by_token(token):
             params={"token": token}
         )
         s.commit()
+
+def batch_upsert_ratings_to_db(token, updates_list):
+    """
+    Executes an atomic batch UPSERT for multiple rating updates under a single database session.
+    Prevents out-of-order writes and reduces database connections.
+    """
+    if not updates_list or not token:
+        return
+    init_db()
+    with conn.session as s:
+        for item in updates_list:
+            s.execute(
+                text("""
+                    INSERT INTO ratings (token, sentence_id, model_name, score, timestamp)
+                    VALUES (:token, :sentence_id, :model_name, :score, CURRENT_TIMESTAMP)
+                    ON CONFLICT (token, sentence_id, model_name)
+                    DO UPDATE SET score = EXCLUDED.score, timestamp = EXCLUDED.timestamp;
+                """),
+                params={
+                    "token": token,
+                    "sentence_id": int(item["sentence_id"]),
+                    "model_name": str(item["model_name"]),
+                    "score": int(item["score"])
+                }
+            )
+        s.commit()
