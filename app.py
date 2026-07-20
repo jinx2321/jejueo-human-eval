@@ -1,13 +1,17 @@
-import streamlit as st
-import streamlit.components.v1 as components
-import json
-import os
-import pandas as pd
-import random
-import hmac
-import hashlib
-import time
-from sqlalchemy import text
+from src.auth import (
+    CLASSROOM_PASSWORDS,
+    create_activation_token,
+    verify_and_clean_activation_token
+)
+from src.db import (
+    init_db,
+    load_ratings_from_db,
+    save_ratings_to_db,
+    save_single_rating_to_db,
+    load_all_ratings_from_db,
+    load_ratings_rows_by_token,
+    check_token_exists
+)
 
 # 1. Page Configuration and Theme Styling (Must be the first Streamlit command)
 st.set_page_config(
@@ -18,14 +22,14 @@ st.set_page_config(
 )
 
 # 2. File Paths
-DATABASE_PATH = "evaluation_batch_100.json"
+DATABASE_PATH = os.path.join("data", "evaluation_batch_100.json")
 
 # 3. Data Loading Functions
 @st.cache_data
 def load_database():
     """Load the central database of sentences."""
     if not os.path.exists(DATABASE_PATH):
-        st.error(f"Error: Database file `{DATABASE_PATH}` not found in the current directory.")
+        st.error(f"Error: Database file `{DATABASE_PATH}` not found in the data directory.")
         return []
     try:
         with open(DATABASE_PATH, 'r', encoding='utf-8') as f:
@@ -55,171 +59,7 @@ total_sentences = len(database)
 db_by_original_index = {item.get("original_index", i): item for i, item in enumerate(database)} if total_sentences > 0 else {}
 candidate_keys = [k for k in database[0].keys() if k not in ["source", "original_index"]] if total_sentences > 0 else []
 
-
-# --- DATABASE PERSISTENCE SETUP ---
-conn = st.connection("sql", type="sql", pool_pre_ping=True, pool_recycle=300)
-
-def init_db():
-    try:
-        with conn.session as s:
-            s.execute(text("""
-                CREATE TABLE IF NOT EXISTS ratings (
-                    token VARCHAR(64) NOT NULL,
-                    sentence_id INTEGER NOT NULL,
-                    model_name VARCHAR(255) NOT NULL,
-                    score INTEGER NOT NULL,
-                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                    PRIMARY KEY (token, sentence_id, model_name)
-                );
-            """))
-            s.commit()
-    except Exception:
-        # Retry connection if serverless SSL connection was closed by idle timeout
-        with conn.session as s:
-            s.execute(text("""
-                CREATE TABLE IF NOT EXISTS ratings (
-                    token VARCHAR(64) NOT NULL,
-                    sentence_id INTEGER NOT NULL,
-                    model_name VARCHAR(255) NOT NULL,
-                    score INTEGER NOT NULL,
-                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                    PRIMARY KEY (token, sentence_id, model_name)
-                );
-            """))
-            s.commit()
-
-def load_ratings_from_db(token):
-    init_db()
-    with conn.session as s:
-        result = s.execute(
-            text("SELECT sentence_id, model_name, score FROM ratings WHERE token = :token"),
-            params={"token": token}
-        )
-        rows = result.fetchall()
-    
-    scores = {}
-    for sentence_id, model_name, score in rows:
-        s_id_str = str(sentence_id)
-        if s_id_str not in scores:
-            scores[s_id_str] = {}
-        scores[s_id_str][model_name] = score
-    return scores
-
-def save_ratings_to_db(token, sentence_id, model_scores):
-    init_db()
-    with conn.session as s:
-        for model_name, score in model_scores.items():
-            s.execute(
-                text("""
-                    INSERT INTO ratings (token, sentence_id, model_name, score, timestamp)
-                    VALUES (:token, :sentence_id, :model_name, :score, NOW())
-                    ON CONFLICT (token, sentence_id, model_name)
-                    DO UPDATE SET score = EXCLUDED.score, timestamp = EXCLUDED.timestamp;
-                """),
-                params={
-                    "token": token,
-                    "sentence_id": int(sentence_id),
-                    "model_name": model_name,
-                    "score": int(score)
-                }
-            )
-        s.commit()
-
-def save_single_rating_to_db(token, sentence_id, model_name, score):
-    init_db()
-    with conn.session as s:
-        s.execute(
-            text("""
-                INSERT INTO ratings (token, sentence_id, model_name, score, timestamp)
-                VALUES (:token, :sentence_id, :model_name, :score, NOW())
-                ON CONFLICT (token, sentence_id, model_name)
-                DO UPDATE SET score = EXCLUDED.score, timestamp = EXCLUDED.timestamp;
-            """),
-            params={
-                "token": token,
-                "sentence_id": int(sentence_id),
-                "model_name": model_name,
-                "score": int(score)
-            }
-        )
-        s.commit()
-
-def load_all_ratings_from_db():
-    init_db()
-    with conn.session as s:
-        result = s.execute(text("SELECT token, sentence_id, model_name, score FROM ratings"))
-        rows = result.fetchall()
-    return rows
-
-def load_ratings_rows_by_token(token):
-    init_db()
-    with conn.session as s:
-        result = s.execute(
-            text("SELECT token, sentence_id, model_name, score FROM ratings WHERE token = :token"),
-            params={"token": token}
-        )
-        rows = result.fetchall()
-    return rows
-
-def check_token_exists(token):
-    init_db()
-    with conn.session as s:
-        result = s.execute(
-            text("SELECT COUNT(*) FROM ratings WHERE token = :token"),
-            params={"token": token}
-        )
-        count = result.scalar()
-    return count > 0
-
-# --- ACCESS CONTROL CONFIGURATION (2-GATE STATE MACHINE & HMAC REFRESH PERSISTENCE) ---
-CLASSROOM_PASSWORDS = {"TUM2026"}
-
-# HMAC secret dynamically resolved from environment or generated per process
-ACTIVATION_SECRET = os.environ.get(
-    "ACTIVATION_SECRET", 
-    hashlib.sha256(b"classroom_activation_secret_seed_2026").hexdigest()
-).encode('utf-8')
-
-def create_activation_token(duration_seconds=600):
-    """
-    Generate a short-lived, HMAC-signed activation token containing only the expiration timestamp.
-    Intended as a classroom convenience layer for 10-minute refresh reuse across browser reloads.
-    """
-    expires_at = int(time.time()) + duration_seconds
-    expires_str = str(expires_at)
-    sig = hmac.new(ACTIVATION_SECRET, expires_str.encode('utf-8'), hashlib.sha256).hexdigest()[:16]
-    return f"{expires_str}.{sig}"
-
-def verify_and_clean_activation_token():
-    """
-    Verify the HMAC signature and expiration time of the URL activation token.
-    Expired or invalid tokens are automatically removed from st.query_params.
-    """
-    token = st.query_params.get("activation")
-    if not token:
-        return False
-    try:
-        parts = token.split(".")
-        if len(parts) != 2:
-            raise ValueError("Invalid format")
-        expires_str, sig = parts
-        expires_at = int(expires_str)
-        
-        # Verify HMAC signature
-        expected_sig = hmac.new(ACTIVATION_SECRET, expires_str.encode('utf-8'), hashlib.sha256).hexdigest()[:16]
-        if not hmac.compare_digest(sig, expected_sig):
-            raise ValueError("Signature mismatch")
-        
-        # Verify timestamp expiration
-        if time.time() > expires_at:
-            raise ValueError("Token expired")
-            
-        return True
-    except Exception:
-        # Expired or invalid tokens are removed from URL query parameters
-        if "activation" in st.query_params:
-            del st.query_params["activation"]
-        return False
+# --- ACCESS CONTROL INITIALIZATION ---
 
 # Initialize Gate 1 unlocked state with 10-minute refresh persistence check
 if "gate1_unlocked" not in st.session_state:

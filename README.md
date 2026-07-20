@@ -44,17 +44,24 @@
 
 ```text
 llm_score/
-├── app.py                         # Main Streamlit application (2-Gate auth, rating UI, dashboard, SQL session)
-├── sampling.py                    # Dataset sampling script (fixed seed 42 sampling 100 entries)
-├── central_database.json          # Master sentence corpus
-├── evaluation_batch_100.json      # Static 100-sentence evaluation batch
+├── app.py                         # Clean Streamlit UI entry point
+├── pytest.ini                     # Pytest configuration
 ├── requirements.txt               # Project dependencies
-├── tests/
-│   └── test_app.py                # Pytest unit test suite (compilation, JSON schema, HMAC validation)
-└── .github/
+├── data/                          # Data Store
+│   ├── central_database.json      # Master raw sentence corpus
+│   └── evaluation_batch_100.json  # Static 100-sentence sampled evaluation batch
+├── scripts/                       # Utility Scripts
+│   └── sampling.py                # Dataset sampling script
+├── src/                           # Core Python Modules
+│   ├── __init__.py
+│   ├── auth.py                    # 2-Gate authentication & HMAC token management
+│   └── db.py                      # Database session pool & rating query helpers
+├── tests/                         # Pytest Suite
+│   └── test_app.py                # Automated tests
+└── .github/                       # CI/CD Workflows
     └── workflows/
-        ├── ci.yml                 # GitHub Actions CI workflow (linting, schema checks, pytest)
-        └── auto_pr.yml            # Automated Pull Request workflow (gh CLI integration)
+        ├── ci.yml                 # GitHub Actions CI workflow
+        └── auto_pr.yml            # Automated Pull Request workflow
 ```
 
 ---

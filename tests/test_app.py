@@ -1,19 +1,28 @@
 import json
 import os
+import sys
 import time
 import py_compile
 import hmac
 import hashlib
 import pytest
 
-# Test 1: Python syntax compilation test for core files
+# Ensure workspace root is in sys.path for src package resolution
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from src.auth import create_activation_token
+
+# Test 1: Python syntax compilation test for core files and package modules
 def test_python_syntax_compilation():
     assert py_compile.compile('app.py', doraise=True) is not None
-    assert py_compile.compile('sampling.py', doraise=True) is not None
+    assert py_compile.compile(os.path.join('scripts', 'sampling.py'), doraise=True) is not None
+    assert py_compile.compile(os.path.join('src', '__init__.py'), doraise=True) is not None
+    assert py_compile.compile(os.path.join('src', 'auth.py'), doraise=True) is not None
+    assert py_compile.compile(os.path.join('src', 'db.py'), doraise=True) is not None
 
 # Test 2: evaluation_batch_100.json schema and entry verification
 def test_evaluation_batch_json_validity():
-    batch_file = "evaluation_batch_100.json"
+    batch_file = os.path.join("data", "evaluation_batch_100.json")
     assert os.path.exists(batch_file), f"{batch_file} does not exist"
     
     with open(batch_file, "r", encoding="utf-8") as f:
@@ -53,6 +62,10 @@ def verify_test_token(token):
 def test_hmac_token_validity():
     valid_token = create_test_token(duration=600)
     assert verify_test_token(valid_token) is True
+
+def test_src_auth_token_creation():
+    token = create_activation_token(duration_seconds=600)
+    assert isinstance(token, str) and "." in token
 
 def test_hmac_token_expired():
     expired_token = create_test_token(duration=-10)
