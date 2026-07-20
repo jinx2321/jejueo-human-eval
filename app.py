@@ -2,8 +2,12 @@ import streamlit as st
 import streamlit.components.v1 as components
 import json
 import os
+import sys
 import pandas as pd
 import random
+
+# Ensure root directory is in sys.path for robust package module resolution on all environments
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from src.auth import (
     CLASSROOM_PASSWORDS,
