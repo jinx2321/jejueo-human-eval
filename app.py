@@ -1,3 +1,10 @@
+import streamlit as st
+import streamlit.components.v1 as components
+import json
+import os
+import pandas as pd
+import random
+
 from src.auth import (
     CLASSROOM_PASSWORDS,
     create_activation_token,
