@@ -133,6 +133,16 @@ def load_all_ratings_from_db():
         rows = result.fetchall()
     return rows
 
+def load_ratings_rows_by_token(token):
+    init_db()
+    with conn.session as s:
+        result = s.execute(
+            text("SELECT token, sentence_id, model_name, score FROM ratings WHERE token = :token"),
+            params={"token": token}
+        )
+        rows = result.fetchall()
+    return rows
+
 def check_token_exists(token):
     init_db()
     with conn.session as s:
@@ -242,66 +252,130 @@ if not st.session_state.authenticated:
                 
     st.stop()
 
-# Custom clean CSS styles for a polished and minimal look
-st.markdown("""
+# Custom clean CSS styles with Light and Dark Theme support
+theme_mode = st.session_state.get("theme_radio", "☀️ Light Mode")
+if theme_mode == "🌙 Dark Mode":
+    theme_colors = """
+    .stApp {
+        background-color: #0E1117 !important;
+        color: #FAFAFA !important;
+    }
+    .source-container {
+        border-left: 5px solid #FF9800 !important;
+        background-color: #261D11 !important;
+        color: #FAFAFA !important;
+    }
+    .reference-container {
+        border-left: 5px solid #4CAF50 !important;
+        background-color: #112615 !important;
+        color: #FAFAFA !important;
+    }
+    .candidate-container {
+        border-left: 5px solid #2196F3 !important;
+        background-color: #111D26 !important;
+        color: #FAFAFA !important;
+    }
+    div[data-testid="stSidebar"] {
+        background-color: #161B22 !important;
+    }
+    div[data-testid="stForm"], div[data-testid="stBorderedContainer"] {
+        background-color: #161B22 !important;
+        border: 1px solid #30363D !important;
+    }
+    code, .stCodeBlock, pre, .copyable-token, [data-testid="stCodeBlock"] {
+        background-color: #1F242C !important;
+        color: #E6EDF3 !important;
+    }
+    """
+else:
+    theme_colors = """
+    .stApp {
+        background-color: #F8F9FA !important;
+        color: #212529 !important;
+    }
+    .source-container {
+        border-left: 5px solid #FF9800 !important;
+        background-color: #FFF3E0 !important;
+        color: #212529 !important;
+    }
+    .reference-container {
+        border-left: 5px solid #4CAF50 !important;
+        background-color: #E8F5E9 !important;
+        color: #212529 !important;
+    }
+    .candidate-container {
+        border-left: 5px solid #2196F3 !important;
+        background-color: #E3F2FD !important;
+        color: #212529 !important;
+    }
+    div[data-testid="stSidebar"] {
+        background-color: #FFFFFF !important;
+    }
+    div[data-testid="stForm"], div[data-testid="stBorderedContainer"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #E0E0E0 !important;
+    }
+    code, .stCodeBlock, pre, .copyable-token, [data-testid="stCodeBlock"] {
+        background-color: #F1F3F5 !important;
+        color: #1A1A1A !important;
+    }
+    """
+
+st.markdown(f"""
 <style>
     /* Adjust Streamlit's default page top/bottom padding to look balanced */
-    .block-container {
+    .block-container {{
         padding-top: 2.5rem !important;
         padding-bottom: 1.5rem !important;
         padding-left: 2rem !important;
         padding-right: 2rem !important;
-    }
+    }}
     
     /* Clean container labels */
-    .container-title {
+    .container-title {{
         font-weight: 700;
         font-size: 0.85rem;
         text-transform: uppercase;
         margin-bottom: 4px;
         letter-spacing: 0.5px;
-    }
+    }}
     
     /* Left-bordered container cards with compact spacing */
-    .source-container {
-        border-left: 5px solid #FF9800;
-        background-color: var(--secondary-background-color);
+    .source-container {{
         padding: 8px 12px;
         border-radius: 4px 8px 8px 4px;
         margin-bottom: 6px;
-    }
+    }}
     
-    .reference-container {
-        border-left: 5px solid #4CAF50;
-        background-color: var(--secondary-background-color);
+    .reference-container {{
         padding: 8px 12px;
         border-radius: 4px 8px 8px 4px;
         margin-bottom: 6px;
-    }
+    }}
     
-    .candidate-container {
-        border-left: 5px solid #2196F3;
-        background-color: var(--secondary-background-color);
+    .candidate-container {{
         padding: 8px 12px;
         border-radius: 4px 8px 8px 4px;
         margin-bottom: 6px;
-    }
+    }}
     
     /* Disable selection globally to prevent copying core paper corpus */
-    body, .stApp, p, div, span, h1, h2, h3, h4, h5, h6 {
+    body, .stApp, p, div, span, h1, h2, h3, h4, h5, h6 {{
         -webkit-user-select: none !important;
         -moz-user-select: none !important;
         -ms-user-select: none !important;
         user-select: none !important;
-    }
+    }}
 
     /* Allow selection and copying for code blocks, token displays, and inputs */
-    code, .stCodeBlock, pre, .copyable-token, [data-testid="stCodeBlock"], input {
+    code, .stCodeBlock, pre, .copyable-token, [data-testid="stCodeBlock"], input {{
         -webkit-user-select: text !important;
         -moz-user-select: text !important;
         -ms-user-select: text !important;
         user-select: text !important;
-    }
+    }}
+
+    {theme_colors}
 </style>
 """, unsafe_allow_html=True)
 
@@ -435,6 +509,16 @@ else:
     with st.sidebar:
         st.header("⚙️ Control Panel")
 
+        # Theme Mode Selector
+        st.subheader("🎨 Appearance")
+        st.radio(
+            "Select Theme Mode:",
+            options=["☀️ Light Mode", "🌙 Dark Mode"],
+            key="theme_radio",
+            horizontal=True
+        )
+        st.markdown("---")
+
         # Evaluator Token Display & Copy Widget
         if st.session_state.get("authenticated") and st.session_state.get("token"):
             st.subheader("🔑 Evaluator Token")
@@ -494,10 +578,11 @@ else:
             st.markdown("---")
             st.subheader("💾 Export & Data Management")
             
-            # Pull all records from database for admin export
-            all_rows = load_all_ratings_from_db()
+            # Pull records exclusively for active evaluator token
+            current_tok = st.session_state.get("token", "")
+            token_rows = load_ratings_rows_by_token(current_tok) if current_tok else []
             export_dict = {}
-            for token, s_idx, model, score in all_rows:
+            for token, s_idx, model, score in token_rows:
                 if token not in export_dict:
                     export_dict[token] = {}
                 s_idx_str = str(s_idx)
@@ -508,17 +593,17 @@ else:
             # Download JSON
             json_scores = json.dumps(export_dict, indent=2, ensure_ascii=False)
             st.download_button(
-                label="📥 Download All Scores (JSON)",
+                label="📥 Download My Scores (JSON)",
                 data=json_scores,
-                file_name="all_llm_scores.json",
+                file_name=f"llm_scores_{current_tok}.json" if current_tok else "llm_scores.json",
                 mime="application/json",
                 use_container_width=True
             )
             
             # Download CSV
-            if all_rows:
+            if token_rows:
                 rows = []
-                for token, s_idx, model, score in all_rows:
+                for token, s_idx, model, score in token_rows:
                     rows.append({
                         "token": token,
                         "sentence_id": s_idx,
@@ -530,13 +615,13 @@ else:
                 df_export = pd.DataFrame(rows)
                 csv_scores = df_export.to_csv(index=False, encoding='utf-8-sig')
                 st.download_button(
-                    label="📥 Download All Scores (CSV)",
+                    label="📥 Download My Scores (CSV)",
                     data=csv_scores,
-                    file_name="all_llm_scores.csv",
+                    file_name=f"llm_scores_{current_tok}.csv" if current_tok else "llm_scores.csv",
                     mime="text/csv",
                     use_container_width=True
                 )
-            
+
             # Reset ratings
             st.markdown("<br><br>", unsafe_allow_html=True)
             if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
