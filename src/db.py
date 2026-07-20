@@ -124,3 +124,42 @@ def delete_ratings_by_token(token):
             params={"token": token}
         )
         s.commit()
+
+from datetime import datetime, timezone
+
+def batch_upsert_ratings_to_db(token, updates_list):
+    """
+    Executes an atomic batch UPSERT for multiple rating updates under a single database session.
+    Uses timestamp-aware conflict resolution (WHERE EXCLUDED.timestamp >= ratings.timestamp)
+    to guarantee older out-of-order writes never overwrite newer rating values.
+    """
+    if not updates_list or not token:
+        return
+    init_db()
+    with conn.session as s:
+        for item in updates_list:
+            raw_ts = item.get("timestamp")
+            if isinstance(raw_ts, (int, float)):
+                ts_val = datetime.fromtimestamp(raw_ts, tz=timezone.utc)
+            elif isinstance(raw_ts, datetime):
+                ts_val = raw_ts
+            else:
+                ts_val = datetime.now(timezone.utc)
+
+            s.execute(
+                text("""
+                    INSERT INTO ratings (token, sentence_id, model_name, score, timestamp)
+                    VALUES (:token, :sentence_id, :model_name, :score, :timestamp_val)
+                    ON CONFLICT (token, sentence_id, model_name)
+                    DO UPDATE SET score = EXCLUDED.score, timestamp = EXCLUDED.timestamp
+                    WHERE EXCLUDED.timestamp >= ratings.timestamp;
+                """),
+                params={
+                    "token": token,
+                    "sentence_id": int(item["sentence_id"]),
+                    "model_name": str(item["model_name"]),
+                    "score": int(item["score"]),
+                    "timestamp_val": ts_val
+                }
+            )
+        s.commit()
