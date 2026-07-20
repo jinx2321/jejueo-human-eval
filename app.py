@@ -311,11 +311,20 @@ def flush_pending_ratings(force=False):
     
     try:
         batch_upsert_ratings_to_db(token, updates_list)
+        # Safe deletion: only delete items from pending_updates if timestamp matches the snapshot item!
+        # If the user edited a rating during sync, the new timestamp in pending_updates will NOT match,
+        # preserving the newer edit for the next flush cycle.
         for item in updates_list:
             key = (item["sentence_id"], item["model_name"])
-            st.session_state.pending_updates.pop(key, None)
+            current = st.session_state.pending_updates.get(key)
+            if current and current.get("timestamp") == item.get("timestamp"):
+                st.session_state.pending_updates.pop(key, None)
             
-        st.session_state.sync_status = "🟢 Synced to database"
+        if not st.session_state.pending_updates:
+            st.session_state.sync_status = "🟢 Synced to database"
+        else:
+            st.session_state.sync_status = "🟡 Pending local changes"
+            
         st.session_state.last_sync_time = time.time()
     except Exception as e:
         st.session_state.sync_status = "🔴 Sync failed"
