@@ -294,6 +294,14 @@ st.markdown("""
         -ms-user-select: none !important;
         user-select: none !important;
     }
+
+    /* Allow selection and copying for code blocks, token displays, and inputs */
+    code, .stCodeBlock, pre, .copyable-token, [data-testid="stCodeBlock"], input {
+        -webkit-user-select: text !important;
+        -moz-user-select: text !important;
+        -ms-user-select: text !important;
+        user-select: text !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -408,11 +416,9 @@ def go_to_ptr(ptr):
 st.markdown("<h3 style='text-align: center; margin-top: -0px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
 
 if st.session_state.get("new_token_created"):
-    st.info(
-        f"🔑 **Your anonymous evaluation token is: `{st.session_state.new_token_created}`**\n\n"
-        "Please copy and save it! You will need it to rejoin this session if your browser crashes or if you change devices.",
-        icon="⚠️"
-    )
+    st.info("🔑 **Your anonymous evaluation token has been generated:**", icon="⚠️")
+    st.code(st.session_state.new_token_created, language=None)
+    st.caption("Please copy and save it! You will need it to rejoin this session if your browser crashes or if you change devices.")
     if st.button("I have copied my token. Dismiss this notice.", type="primary", key="dismiss_token_btn"):
         st.session_state.new_token_created = None
         st.rerun()
@@ -428,6 +434,13 @@ else:
     # --- SIDEBAR CONTROL PANEL ---
     with st.sidebar:
         st.header("⚙️ Control Panel")
+
+        # Evaluator Token Display & Copy Widget
+        if st.session_state.get("authenticated") and st.session_state.get("token"):
+            st.subheader("🔑 Evaluator Token")
+            st.code(st.session_state.token, language=None)
+            st.caption("Copy your token to reconnect on other devices.")
+            st.markdown("---")
         
         # Admin Access Passcode
         st.subheader("🔑 Admin Access")
@@ -844,19 +857,32 @@ else:
         st.write(f"Showing {len(df_filtered)} records.")
         st.dataframe(df_filtered, use_container_width=True, hide_index=True)
 
-    # 6. Copy Prevention Script
+    # 6. Copy Prevention Script (with exemption for user tokens and code blocks)
     components.html("""
     <script>
+        function isCopyable(el) {
+            if (!el) return false;
+            if (el.nodeType === 3) el = el.parentElement;
+            return !!(el && el.closest && el.closest('code, .stCodeBlock, pre, .copyable-token, [data-testid="stCodeBlock"], input'));
+        }
+
         try {
-            // Prevent context menu (right-click) on parent window
+            // Prevent context menu (right-click) on parent window unless copyable element
             window.parent.document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
+                if (!isCopyable(e.target)) {
+                    e.preventDefault();
+                }
             });
-            // Prevent copy event on parent window
+            // Prevent copy event on parent window unless copyable element or selection
             window.parent.document.addEventListener('copy', function(e) {
+                var sel = window.parent.getSelection();
+                var anchor = sel ? sel.anchorNode : null;
+                if (isCopyable(anchor) || isCopyable(e.target)) {
+                    return; // Allow copy
+                }
                 e.preventDefault();
             });
-            // Prevent text selection on parent window
+            // Prevent text selection on parent window body
             window.parent.document.body.style.userSelect = 'none';
             window.parent.document.body.style.webkitUserSelect = 'none';
             window.parent.document.body.style.msUserSelect = 'none';
@@ -866,9 +892,12 @@ else:
         
         // Disable within the iframe itself
         document.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
+            if (!isCopyable(e.target)) e.preventDefault();
         });
         document.addEventListener('copy', function(e) {
+            var sel = window.getSelection();
+            var anchor = sel ? sel.anchorNode : null;
+            if (isCopyable(anchor) || isCopyable(e.target)) return;
             e.preventDefault();
         });
         document.body.style.userSelect = 'none';
