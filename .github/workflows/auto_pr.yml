@@ -10,27 +10,33 @@ jobs:
     name: Create Pull Request to Main
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create or Update Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          branch: ${{ github.ref_name }}
-          base: main
-          title: "🚀 [Auto-PR] Merge ${{ github.ref_name }} into main"
-          body: |
-            ## Automated Pull Request
-            This PR was automatically created by GitHub Actions for branch `${{ github.ref_name }}`.
-            
+      - name: Create Pull Request using GitHub CLI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_EXISTS=$(gh pr list --head "${{ github.ref_name }}" --base main --json number --jq '.[0].number')
+          if [ -z "$PR_EXISTS" ]; then
+            echo "Creating new Pull Request for branch ${{ github.ref_name }}..."
+            gh pr create \
+              --base main \
+              --head "${{ github.ref_name }}" \
+              --title "🚀 [Auto-PR] Merge ${{ github.ref_name }} into main" \
+              --body "## Automated Pull Request
+            This PR was automatically created by GitHub Actions for branch \`${{ github.ref_name }}\`.
+
             ### Automated Checks
-            - [ ] CI Pipeline validation
-            - [ ] Unit & Schema tests
-            
-            Once merged into `main`, **Streamlit Community Cloud CD** will automatically deploy the latest changes to production.
-          commit-message: "chore: automated pull request sync"
-          labels: "automated-pr, ready-for-review"
+            - [x] Branch pushed to remote
+            - [ ] CI Pipeline validation & Pytest suite
+
+            Once merged into \`main\`, **Streamlit Community Cloud CD** will automatically deploy the latest changes to production." \
+              --label "automated-pr"
+          else
+            echo "Pull Request #$PR_EXISTS already exists for branch ${{ github.ref_name }}."
+          fi
