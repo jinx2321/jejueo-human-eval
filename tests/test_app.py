@@ -7,18 +7,18 @@ import hmac
 import hashlib
 import pytest
 
-# Ensure workspace root is in sys.path for src package resolution
+# Ensure workspace root is in sys.path for backend package resolution
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.auth import create_activation_token
+from backend.auth import create_activation_token
 
 # Test 1: Python syntax compilation test for core files and package modules
 def test_python_syntax_compilation():
     assert py_compile.compile('app.py', doraise=True) is not None
     assert py_compile.compile(os.path.join('scripts', 'sampling.py'), doraise=True) is not None
-    assert py_compile.compile(os.path.join('src', '__init__.py'), doraise=True) is not None
-    assert py_compile.compile(os.path.join('src', 'auth.py'), doraise=True) is not None
-    assert py_compile.compile(os.path.join('src', 'db.py'), doraise=True) is not None
+    assert py_compile.compile(os.path.join('backend', '__init__.py'), doraise=True) is not None
+    assert py_compile.compile(os.path.join('backend', 'auth.py'), doraise=True) is not None
+    assert py_compile.compile(os.path.join('backend', 'db.py'), doraise=True) is not None
 
 # Test 2: evaluation_batch_100.json schema and entry verification
 def test_evaluation_batch_json_validity():
@@ -78,7 +78,7 @@ def test_hmac_token_tampered():
 
 def test_batch_upsert_ratings_structure():
     try:
-        from src.db import batch_upsert_ratings_to_db
+        from backend.db import batch_upsert_ratings_to_db
         assert callable(batch_upsert_ratings_to_db)
     except BaseException:
         # Catch BaseException if psycopg2 driver is not installed in global test runner

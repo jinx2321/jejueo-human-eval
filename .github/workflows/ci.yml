@@ -28,7 +28,7 @@ jobs:
 
       - name: Verify Python Code Syntax
         run: |
-          python -m py_compile app.py scripts/sampling.py src/auth.py src/db.py
+          python -m py_compile app.py scripts/sampling.py backend/auth.py backend/db.py
 
       - name: Run Pytest Test Suite
         run: |

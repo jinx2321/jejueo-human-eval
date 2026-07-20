@@ -3,18 +3,19 @@ import streamlit.components.v1 as components
 import json
 import os
 import sys
+import time
 import pandas as pd
 import random
 
 # Ensure root directory is in sys.path for robust package module resolution on all environments
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from src.auth import (
+from backend.auth import (
     CLASSROOM_PASSWORDS,
     create_activation_token,
     verify_and_clean_activation_token
 )
-from src.db import (
+from backend.db import (
     init_db,
     load_ratings_from_db,
     save_ratings_to_db,
