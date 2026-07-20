@@ -133,6 +133,16 @@ def load_all_ratings_from_db():
         rows = result.fetchall()
     return rows
 
+def load_ratings_rows_by_token(token):
+    init_db()
+    with conn.session as s:
+        result = s.execute(
+            text("SELECT token, sentence_id, model_name, score FROM ratings WHERE token = :token"),
+            params={"token": token}
+        )
+        rows = result.fetchall()
+    return rows
+
 def check_token_exists(token):
     init_db()
     with conn.session as s:
@@ -494,10 +504,11 @@ else:
             st.markdown("---")
             st.subheader("💾 Export & Data Management")
             
-            # Pull all records from database for admin export
-            all_rows = load_all_ratings_from_db()
+            # Pull records exclusively for active evaluator token
+            current_tok = st.session_state.get("token", "")
+            token_rows = load_ratings_rows_by_token(current_tok) if current_tok else []
             export_dict = {}
-            for token, s_idx, model, score in all_rows:
+            for token, s_idx, model, score in token_rows:
                 if token not in export_dict:
                     export_dict[token] = {}
                 s_idx_str = str(s_idx)
@@ -508,17 +519,17 @@ else:
             # Download JSON
             json_scores = json.dumps(export_dict, indent=2, ensure_ascii=False)
             st.download_button(
-                label="📥 Download All Scores (JSON)",
+                label="📥 Download My Scores (JSON)",
                 data=json_scores,
-                file_name="all_llm_scores.json",
+                file_name=f"llm_scores_{current_tok}.json" if current_tok else "llm_scores.json",
                 mime="application/json",
                 use_container_width=True
             )
             
             # Download CSV
-            if all_rows:
+            if token_rows:
                 rows = []
-                for token, s_idx, model, score in all_rows:
+                for token, s_idx, model, score in token_rows:
                     rows.append({
                         "token": token,
                         "sentence_id": s_idx,
@@ -530,13 +541,13 @@ else:
                 df_export = pd.DataFrame(rows)
                 csv_scores = df_export.to_csv(index=False, encoding='utf-8-sig')
                 st.download_button(
-                    label="📥 Download All Scores (CSV)",
+                    label="📥 Download My Scores (CSV)",
                     data=csv_scores,
-                    file_name="all_llm_scores.csv",
+                    file_name=f"llm_scores_{current_tok}.csv" if current_tok else "llm_scores.csv",
                     mime="text/csv",
                     use_container_width=True
                 )
-            
+
             # Reset ratings
             st.markdown("<br><br>", unsafe_allow_html=True)
             if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
