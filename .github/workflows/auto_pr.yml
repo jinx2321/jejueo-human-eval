@@ -1,0 +1,36 @@
+name: Automated Pull Request (Auto-PR)
+
+on:
+  push:
+    branches:
+      - 'feature/**'
+
+jobs:
+  auto-create-pr:
+    name: Create Pull Request to Main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create or Update Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ github.ref_name }}
+          base: main
+          title: "🚀 [Auto-PR] Merge ${{ github.ref_name }} into main"
+          body: |
+            ## Automated Pull Request
+            This PR was automatically created by GitHub Actions for branch `${{ github.ref_name }}`.
+            
+            ### Automated Checks
+            - [ ] CI Pipeline validation
+            - [ ] Unit & Schema tests
+            
+            Once merged into `main`, **Streamlit Community Cloud CD** will automatically deploy the latest changes to production.
+          commit-message: "chore: automated pull request sync"
+          labels: "automated-pr, ready-for-review"
