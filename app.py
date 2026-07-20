@@ -57,21 +57,36 @@ candidate_keys = [k for k in database[0].keys() if k not in ["source", "original
 
 
 # --- DATABASE PERSISTENCE SETUP ---
-conn = st.connection("sql", type="sql")
+conn = st.connection("sql", type="sql", pool_pre_ping=True, pool_recycle=300)
 
 def init_db():
-    with conn.session as s:
-        s.execute(text("""
-            CREATE TABLE IF NOT EXISTS ratings (
-                token VARCHAR(64) NOT NULL,
-                sentence_id INTEGER NOT NULL,
-                model_name VARCHAR(255) NOT NULL,
-                score INTEGER NOT NULL,
-                timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
-                PRIMARY KEY (token, sentence_id, model_name)
-            );
-        """))
-        s.commit()
+    try:
+        with conn.session as s:
+            s.execute(text("""
+                CREATE TABLE IF NOT EXISTS ratings (
+                    token VARCHAR(64) NOT NULL,
+                    sentence_id INTEGER NOT NULL,
+                    model_name VARCHAR(255) NOT NULL,
+                    score INTEGER NOT NULL,
+                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    PRIMARY KEY (token, sentence_id, model_name)
+                );
+            """))
+            s.commit()
+    except Exception:
+        # Retry connection if serverless SSL connection was closed by idle timeout
+        with conn.session as s:
+            s.execute(text("""
+                CREATE TABLE IF NOT EXISTS ratings (
+                    token VARCHAR(64) NOT NULL,
+                    sentence_id INTEGER NOT NULL,
+                    model_name VARCHAR(255) NOT NULL,
+                    score INTEGER NOT NULL,
+                    timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+                    PRIMARY KEY (token, sentence_id, model_name)
+                );
+            """))
+            s.commit()
 
 def load_ratings_from_db(token):
     init_db()
