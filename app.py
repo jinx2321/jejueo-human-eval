@@ -4,6 +4,9 @@ import json
 import os
 import pandas as pd
 import random
+import hmac
+import hashlib
+import time
 from sqlalchemy import text
 
 # 1. Page Configuration and Theme Styling (Must be the first Streamlit command)
@@ -153,11 +156,65 @@ def check_token_exists(token):
         count = result.scalar()
     return count > 0
 
-# --- ACCESS CONTROL CONFIGURATION (2-GATE STATE MACHINE) ---
+# --- ACCESS CONTROL CONFIGURATION (2-GATE STATE MACHINE & HMAC REFRESH PERSISTENCE) ---
 CLASSROOM_PASSWORDS = {"TUM2026"}
 
+# HMAC secret dynamically resolved from environment or generated per process
+ACTIVATION_SECRET = os.environ.get(
+    "ACTIVATION_SECRET", 
+    hashlib.sha256(b"classroom_activation_secret_seed_2026").hexdigest()
+).encode('utf-8')
+
+def create_activation_token(duration_seconds=600):
+    """
+    Generate a short-lived, HMAC-signed activation token containing only the expiration timestamp.
+    Intended as a classroom convenience layer for 10-minute refresh reuse across browser reloads.
+    """
+    expires_at = int(time.time()) + duration_seconds
+    expires_str = str(expires_at)
+    sig = hmac.new(ACTIVATION_SECRET, expires_str.encode('utf-8'), hashlib.sha256).hexdigest()[:16]
+    return f"{expires_str}.{sig}"
+
+def verify_and_clean_activation_token():
+    """
+    Verify the HMAC signature and expiration time of the URL activation token.
+    Expired or invalid tokens are automatically removed from st.query_params.
+    """
+    token = st.query_params.get("activation")
+    if not token:
+        return False
+    try:
+        parts = token.split(".")
+        if len(parts) != 2:
+            raise ValueError("Invalid format")
+        expires_str, sig = parts
+        expires_at = int(expires_str)
+        
+        # Verify HMAC signature
+        expected_sig = hmac.new(ACTIVATION_SECRET, expires_str.encode('utf-8'), hashlib.sha256).hexdigest()[:16]
+        if not hmac.compare_digest(sig, expected_sig):
+            raise ValueError("Signature mismatch")
+        
+        # Verify timestamp expiration
+        if time.time() > expires_at:
+            raise ValueError("Token expired")
+            
+        return True
+    except Exception:
+        # Expired or invalid tokens are removed from URL query parameters
+        if "activation" in st.query_params:
+            del st.query_params["activation"]
+        return False
+
+# Initialize Gate 1 unlocked state with 10-minute refresh persistence check
 if "gate1_unlocked" not in st.session_state:
-    st.session_state.gate1_unlocked = False
+    if verify_and_clean_activation_token():
+        st.session_state.gate1_unlocked = True
+    else:
+        st.session_state.gate1_unlocked = False
+else:
+    # Continuously clean up expired URL token
+    verify_and_clean_activation_token()
 
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -186,6 +243,8 @@ if not st.session_state.gate1_unlocked:
         if st.button("Unlock System", use_container_width=True):
             if activation_input.strip() in CLASSROOM_PASSWORDS:
                 st.session_state.gate1_unlocked = True
+                # Set 10-minute HMAC signed token in query parameters for refresh persistence
+                st.query_params["activation"] = create_activation_token(duration_seconds=600)
                 st.success("System unlocked! Proceed to login/registration.")
                 st.rerun()
             elif not activation_input.strip():
