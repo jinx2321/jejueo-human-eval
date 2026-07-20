@@ -3,6 +3,7 @@ import streamlit.components.v1 as components
 import json
 import os
 import sys
+import time
 import pandas as pd
 import random
 
