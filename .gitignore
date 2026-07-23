@@ -103,3 +103,15 @@ scores.json
 # *.json
 central_database.json
 .streamlit/secrets.toml
+
+# Local-only test database (production uses a real Postgres DB via secrets.toml)
+*.db
+
+# Raw long-format source exports (already converted into data/*.json below;
+# the app doesn't read these directly) and the blind-model-identity metadata
+# sidecars (reveal which hidden system produced each candidate - keep local
+# only so a repo collaborator can't de-anonymize mid-study).
+jejueo_human_eval_300.json
+jejueo_human_eval_300_ko2je.json
+data/jejueo_to_standard_meta.json
+data/standard_to_jejueo_meta.json

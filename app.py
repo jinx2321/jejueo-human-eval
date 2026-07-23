@@ -11,7 +11,8 @@ import random
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from backend.auth import (
-    CLASSROOM_PASSWORDS,
+    EVALUATOR_LOGIN_CHOICES,
+    group_for_evaluator,
     create_activation_token,
     verify_and_clean_activation_token
 )
@@ -22,35 +23,81 @@ from backend.db import (
     save_single_rating_to_db,
     load_all_ratings_from_db,
     load_ratings_rows_by_token,
-    check_token_exists,
     delete_ratings_by_token,
-    batch_upsert_ratings_to_db
+    batch_upsert_ratings_to_db,
+    load_notes_from_db,
+    save_note_to_db,
+    load_all_notes_from_db
 )
 
 # 1. Page Configuration and Theme Styling (Must be the first Streamlit command)
 st.set_page_config(
-    page_title="LLM Sentence Scorer",
-    page_icon="📝",
+    page_title="제주어-표준어 번역 평가",
+    page_icon="🍊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2. File Paths
-DATABASE_PATH = os.path.join("data", "evaluation_batch_100.json")
+# 2. Evaluation Direction & File Paths
+DIRECTIONS = {
+    "jj2ko": {
+        "label": "제주어 → 표준어",
+        "path": os.path.join("data", "jejueo_to_standard.json"),
+        "source_label": "제주어 원문",
+        "candidate_label": "표준어 후보",
+    },
+    "ko2jj": {
+        "label": "표준어 → 제주어",
+        "path": os.path.join("data", "standard_to_jejueo.json"),
+        "source_label": "표준어 원문",
+        "candidate_label": "제주어 후보",
+    },
+}
+KOREAN_ORDINALS = ["가", "나", "다", "라", "마", "바", "사", "아", "자", "차"]
+
+# Ordered evaluator groups: each direction's sentences are split into contiguous,
+# non-overlapping blocks (one per group) so every evaluator reviews a distinct slice
+# and the groups together cover the full dataset with no overlap.
+EVALUATOR_GROUPS = ["group_a", "group_b", "group_c"]
+
+# jj2ko and ko2jj are parallel corpora: sentence i in one direction's file is the
+# same underlying sentence pair as sentence i in the other. Rotating the block
+# assignment by one group per direction guarantees no evaluator is ever assigned
+# the same underlying sentence in both directions, while each direction is still
+# split into non-overlapping blocks that fully cover it.
+DIRECTION_ROTATION = {"jj2ko": 0, "ko2jj": 1}
+
+def get_assigned_indices(total, group, direction):
+    """Return this evaluator's assigned sentence indices for one direction.
+
+    group=None (or unrecognized) means unrestricted/full access (used for the
+    admin preview code). Otherwise the total range is split into
+    len(EVALUATOR_GROUPS) near-equal contiguous blocks, rotated per direction
+    (see DIRECTION_ROTATION) so a given evaluator's blocks never line up across
+    the two directions.
+    """
+    if not group or group not in EVALUATOR_GROUPS:
+        return list(range(total))
+    n = len(EVALUATOR_GROUPS)
+    idx = (EVALUATOR_GROUPS.index(group) + DIRECTION_ROTATION.get(direction, 0)) % n
+    base, remainder = divmod(total, n)
+    start = idx * base + min(idx, remainder)
+    end = start + base + (1 if idx < remainder else 0)
+    return list(range(start, end))
 
 # 3. Data Loading Functions
 @st.cache_data
-def load_database():
-    """Load the central database of sentences."""
-    if not os.path.exists(DATABASE_PATH):
-        st.error(f"Error: Database file `{DATABASE_PATH}` not found in the data directory.")
+def load_database(path):
+    """Load a sentence database file for one evaluation direction."""
+    if not os.path.exists(path):
+        st.error(f"오류: 데이터베이스 파일 `{path}`을(를) 찾을 수 없습니다.")
         return []
     try:
-        with open(DATABASE_PATH, 'r', encoding='utf-8') as f:
+        with open(path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         return data
     except Exception as e:
-        st.error(f"Error loading database: {str(e)}")
+        st.error(f"데이터베이스 로딩 오류: {str(e)}")
         return []
 
 def escape_html_display(text):
@@ -66,33 +113,19 @@ def escape_html_display(text):
         .replace("*", "&#42;")
     )
 
-# Load data
-database = load_database()
-total_sentences = len(database)
-# Map original_index to current item for fast lookup
-db_by_original_index = {item.get("original_index", i): item for i, item in enumerate(database)} if total_sentences > 0 else {}
-candidate_keys = [k for k in database[0].keys() if k not in ["source", "original_index"]] if total_sentences > 0 else []
+# Load data for both directions (cached individually per file path)
+all_databases = {d: load_database(cfg["path"]) for d, cfg in DIRECTIONS.items()}
+db_by_original_index = {
+    d: ({item.get("original_index", i): item for i, item in enumerate(db)} if len(db) > 0 else {})
+    for d, db in all_databases.items()
+}
+RESERVED_SENTENCE_KEYS = {"source", "original_index", "example_id"}
+candidate_keys_by_direction = {
+    d: ([k for k in db[0].keys() if k not in RESERVED_SENTENCE_KEYS] if len(db) > 0 else [])
+    for d, db in all_databases.items()
+}
 
 # --- ACCESS CONTROL INITIALIZATION ---
-
-# Initialize Gate 1 unlocked state with 10-minute refresh persistence check
-if "gate1_unlocked" not in st.session_state:
-    if verify_and_clean_activation_token():
-        st.session_state.gate1_unlocked = True
-    else:
-        st.session_state.gate1_unlocked = False
-else:
-    # Continuously clean up expired URL token
-    verify_and_clean_activation_token()
-
-if "authenticated" not in st.session_state:
-    st.session_state.authenticated = False
-
-if "token" not in st.session_state:
-    st.session_state.token = ""
-
-if "new_token_created" not in st.session_state:
-    st.session_state.new_token_created = None
 
 def clear_evaluation_session_states():
     for k in list(st.session_state.keys()):
@@ -100,84 +133,63 @@ def clear_evaluation_session_states():
             del st.session_state[k]
     if "touched_sliders" in st.session_state:
         del st.session_state.touched_sliders
+    st.session_state.dir_state = {}
 
-# Gate 1: Classroom Activation Protection (Anti-Bot Barrier)
+def log_in_as(evaluator_id):
+    st.session_state.gate1_unlocked = True
+    st.session_state.authenticated = True
+    # No real names anywhere: the chosen ID is both the login identity and the
+    # only thing persisted with scores/notes/exports.
+    st.session_state.token = evaluator_id
+    st.session_state.evaluator_group = group_for_evaluator(evaluator_id)
+
+# Initialize login state with 10-minute refresh persistence check
+if "gate1_unlocked" not in st.session_state:
+    verified_id = verify_and_clean_activation_token()
+    if verified_id is not None:
+        log_in_as(verified_id)
+    else:
+        st.session_state.gate1_unlocked = False
+        st.session_state.authenticated = False
+        st.session_state.token = ""
+else:
+    # Continuously clean up expired URL token
+    verify_and_clean_activation_token()
+
+# Gate: Consent + Evaluator ID selection (doubles as anti-bot barrier)
 if not st.session_state.gate1_unlocked:
-    st.markdown("<h2 style='text-align: center; margin-top: 100px;'>🔒 Classroom Activation Protection</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Please enter the Classroom Activation Password to access the evaluation system.</p>", unsafe_allow_html=True)
-    
-    col_l, col_m, col_r = st.columns([1, 2, 1])
-    with col_m:
-        activation_input = st.text_input("Enter Classroom Activation Password:", type="password", key="activation_input")
-        if st.button("Unlock System", use_container_width=True):
-            if activation_input.strip() in CLASSROOM_PASSWORDS:
-                st.session_state.gate1_unlocked = True
-                # Set 10-minute HMAC signed token in query parameters for refresh persistence
-                st.query_params["activation"] = create_activation_token(duration_seconds=600)
-                st.success("System unlocked! Proceed to login/registration.")
-                st.rerun()
-            elif not activation_input.strip():
-                st.error("Please enter the password.")
-            else:
-                st.error("Incorrect password. Access denied.")
-    st.stop()
+    st.markdown("<h2 style='text-align: center; margin-top: 100px;'>🍊 제주어-표준어 번역 평가 참여</h2>", unsafe_allow_html=True)
 
-# Gate 2: Token Branching (Reconnection vs. Fresh Start)
-if not st.session_state.authenticated:
-    st.markdown("<h2 style='text-align: center; margin-top: 100px;'>🔑 Evaluator Authentication</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center;'>Welcome to the LLM Sentence Scorer. Please reconnect using your existing token or start a new session.</p>", unsafe_allow_html=True)
-    
     col_l, col_m, col_r = st.columns([1, 2, 1])
     with col_m:
-        tab_reconnect, tab_new = st.tabs(["🔌 Seamless Reconnection", "➕ New Evaluator"])
-        
-        with tab_reconnect:
-            st.markdown("### Path A: Reconnect")
-            token_input = st.text_input(
-                "Enter your 6-character Token:", 
-                key="token_reconnect_input",
-                placeholder="XXXXXX"
-            ).strip().upper()
-            
-            if st.button("Reconnect Session", use_container_width=True):
-                if len(token_input) != 6:
-                    st.error("Please enter a valid 6-character token.")
-                elif check_token_exists(token_input):
-                    st.session_state.authenticated = True
-                    st.session_state.token = token_input
-                    clear_evaluation_session_states()
-                    st.session_state.scores = load_ratings_from_db(token_input)
-                    
-                    # Restore session navigation pointer
-                    if total_sentences > 0:
-                        st.session_state.session_indices = list(range(total_sentences))
-                        st.session_state.index_ptr = 0
-                        for ptr, s_idx in enumerate(st.session_state.session_indices):
-                            item = database[s_idx]
-                            db_idx = item.get("original_index", s_idx)
-                            if str(db_idx) not in st.session_state.scores:
-                                st.session_state.index_ptr = ptr
-                                break
-                    st.success("Welcome back! Reconnected successfully.")
-                    st.rerun()
-                else:
-                    st.error("No historical ratings found for this token. If you are new, please use the 'New Evaluator' tab.")
-                    
-        with tab_new:
-            st.markdown("### Path B: Fresh Start")
-            st.write("If you don't have a token, click below to generate one anonymously.")
-            if st.button("No, I am a new evaluator. Generate a new Token", use_container_width=True):
-                import uuid
-                new_tok = uuid.uuid4().hex[:6].upper()
-                st.session_state.authenticated = True
-                st.session_state.token = new_tok
-                st.session_state.new_token_created = new_tok
+        st.markdown("""
+        ##### 연구 참여 안내
+        - 이 설문은 제주어-표준어 번역 품질을 사람이 직접 평가하는 연구입니다.
+        - 여러분이 매기시는 점수와 남겨주시는 특이사항(선택 의견)은 연구 및 논문 작성 목적으로 사용될 수 있습니다.
+        - 실명은 수집하지 않으며, 데이터는 아래에서 선택하시는 익명 번호로만 저장됩니다.
+        - 참여는 자유의사에 따른 것이며, 언제든지 중단하실 수 있습니다.
+        - 문의사항이 있으시면 담당 연구자에게 연락해주세요.
+        """)
+        consent_given = st.checkbox("위 안내 내용을 읽었으며, 참여에 동의합니다.", key="consent_checkbox")
+
+        st.markdown("---")
+        st.markdown("<p style='text-align: center;'>안내받으신 참여자 번호를 선택해주세요.</p>", unsafe_allow_html=True)
+        selected_id = st.selectbox(
+            "참여자 번호를 선택해주세요.",
+            options=EVALUATOR_LOGIN_CHOICES,
+            key="evaluator_id_select",
+            label_visibility="collapsed",
+        )
+        if st.button("참여하기", use_container_width=True):
+            if not consent_given:
+                st.error("참여하려면 먼저 위 안내 내용에 동의해주세요.")
+            else:
+                log_in_as(selected_id)
                 clear_evaluation_session_states()
-                st.session_state.scores = {}
-                st.session_state.index_ptr = 0
-                st.success("Token generated successfully!")
+                # Set 10-minute HMAC signed token in query parameters for refresh persistence
+                st.query_params["activation"] = create_activation_token(selected_id, duration_seconds=600)
+                st.success("확인되었습니다! 계속 진행해주세요.")
                 st.rerun()
-                
     st.stop()
 
 # Custom clean CSS styles for a polished and minimal look
@@ -190,7 +202,7 @@ st.markdown("""
         padding-left: 2rem !important;
         padding-right: 2rem !important;
     }
-    
+
     /* Clean container labels */
     .container-title {
         font-weight: 700;
@@ -199,7 +211,7 @@ st.markdown("""
         margin-bottom: 4px;
         letter-spacing: 0.5px;
     }
-    
+
     /* Left-bordered container cards with compact spacing */
     .source-container {
         border-left: 5px solid #FF9800;
@@ -208,15 +220,7 @@ st.markdown("""
         border-radius: 4px 8px 8px 4px;
         margin-bottom: 6px;
     }
-    
-    .reference-container {
-        border-left: 5px solid #4CAF50;
-        background-color: var(--secondary-background-color);
-        padding: 8px 12px;
-        border-radius: 4px 8px 8px 4px;
-        margin-bottom: 6px;
-    }
-    
+
     .candidate-container {
         border-left: 5px solid #2196F3;
         background-color: var(--secondary-background-color);
@@ -224,8 +228,8 @@ st.markdown("""
         border-radius: 4px 8px 8px 4px;
         margin-bottom: 6px;
     }
-    
-    /* Disable selection globally to prevent copying core paper corpus */
+
+    /* Disable selection globally to prevent copying core corpus */
     body, .stApp, p, div, span, h1, h2, h3, h4, h5, h6 {
         -webkit-user-select: none !important;
         -moz-user-select: none !important;
@@ -246,19 +250,21 @@ st.markdown("""
 # --- BACKEND CONFIGURATION ---
 ADMIN_PASSWORD = "admin"
 BLIND_RATING = True  # Hide model names and randomize candidate display order
+SCORE_MIN = 0
+SCORE_MAX = 100
 
 # 4. State Initialization
-if "scores" not in st.session_state:
-    if st.session_state.get("authenticated") and "token" in st.session_state:
-        st.session_state.scores = load_ratings_from_db(st.session_state.token)
-    else:
-        st.session_state.scores = {}
+if "direction" not in st.session_state:
+    st.session_state.direction = list(DIRECTIONS.keys())[0]
+
+if "dir_state" not in st.session_state:
+    st.session_state.dir_state = {}
 
 if "pending_updates" not in st.session_state:
     st.session_state.pending_updates = {}
 
 if "sync_status" not in st.session_state:
-    st.session_state.sync_status = "🟢 Synced to database"
+    st.session_state.sync_status = "🟢 데이터베이스와 동기화됨"
 
 if "last_sync_time" not in st.session_state:
     st.session_state.last_sync_time = time.time()
@@ -266,42 +272,55 @@ if "last_sync_time" not in st.session_state:
 if "show_warning" not in st.session_state:
     st.session_state.show_warning = False
 
-if "session_indices" not in st.session_state and total_sentences > 0:
-    # Use all pre-sampled sentences in order
-    st.session_state.session_indices = list(range(total_sentences))
-    
-    # Set index pointer to first unrated sentence in this list, or 0
-    st.session_state.index_ptr = 0
-    for ptr, s_idx in enumerate(st.session_state.session_indices):
-        item = database[s_idx]
-        db_idx = item.get("original_index", s_idx)
-        if str(db_idx) not in st.session_state.scores:
-            st.session_state.index_ptr = ptr
-            break
+if "touched_sliders" not in st.session_state:
+    st.session_state.touched_sliders = {}
 
-# Ensure index pointer is valid
-if "session_indices" in st.session_state and len(st.session_state.session_indices) > 0:
-    st.session_state.index_ptr = max(0, min(st.session_state.index_ptr, len(st.session_state.session_indices) - 1))
-else:
-    st.session_state.index_ptr = 0
-
-# Keep track of randomized orders for blind scoring to prevent rerendering shuffle on slider click
-if "shuffled_candidates" not in st.session_state:
-    st.session_state.shuffled_candidates = {}
+def get_dir_state(direction):
+    """Lazily initialize (and cache) per-direction scores + navigation state."""
+    if direction not in st.session_state.dir_state:
+        db = all_databases.get(direction, [])
+        total = len(db)
+        scores = {}
+        notes = {}
+        if st.session_state.get("authenticated") and st.session_state.get("token"):
+            scores = load_ratings_from_db(st.session_state.token, direction)
+            notes = load_notes_from_db(st.session_state.token, direction)
+        session_indices = get_assigned_indices(total, st.session_state.get("evaluator_group"), direction)
+        index_ptr = 0
+        for ptr, s_idx in enumerate(session_indices):
+            item = db[s_idx]
+            db_idx = item.get("original_index", s_idx)
+            if str(db_idx) not in scores:
+                index_ptr = ptr
+                break
+        st.session_state.dir_state[direction] = {
+            "scores": scores,
+            "notes": notes,
+            "session_indices": session_indices,
+            "index_ptr": index_ptr,
+            "shuffled_candidates": {},
+        }
+    ds = st.session_state.dir_state[direction]
+    # Ensure index pointer is valid
+    if len(ds["session_indices"]) > 0:
+        ds["index_ptr"] = max(0, min(ds["index_ptr"], len(ds["session_indices"]) - 1))
+    else:
+        ds["index_ptr"] = 0
+    return ds
 
 # 5. Session State Navigation & Sync Functions
 def flush_pending_ratings(force=False):
     """
     Flushes pending memory updates to PostgreSQL via an atomic batch UPSERT.
     Status transitions:
-      🟡 Pending local changes -> 🔄 Syncing -> 🟢 Synced to database (or 🔴 Sync failed)
+      🟡 로컬 변경사항 대기 중 -> 🔄 동기화 중 -> 🟢 데이터베이스와 동기화됨 (또는 🔴 동기화 실패)
     """
     pending = st.session_state.get("pending_updates", {})
     if not pending:
-        if st.session_state.get("sync_status") == "🟡 Pending local changes":
-            st.session_state.sync_status = "🟢 Synced to database"
+        if st.session_state.get("sync_status") == "🟡 로컬 변경사항 대기 중":
+            st.session_state.sync_status = "🟢 데이터베이스와 동기화됨"
         return
-        
+
     token = st.session_state.get("token")
     if not token or not st.session_state.get("authenticated"):
         return
@@ -311,608 +330,665 @@ def flush_pending_ratings(force=False):
     if not force and (now - last_sync < 0.8):
         return
 
-    st.session_state.sync_status = "🔄 Syncing"
+    st.session_state.sync_status = "🔄 동기화 중"
     updates_list = list(pending.values())
-    
+
     try:
         batch_upsert_ratings_to_db(token, updates_list)
         # Safe deletion: only delete items from pending_updates if timestamp matches the snapshot item!
         # If the user edited a rating during sync, the new timestamp in pending_updates will NOT match,
         # preserving the newer edit for the next flush cycle.
         for item in updates_list:
-            key = (item["sentence_id"], item["model_name"])
+            key = (item["direction"], item["sentence_id"], item["model_name"])
             current = st.session_state.pending_updates.get(key)
             if current and current.get("timestamp") == item.get("timestamp"):
                 st.session_state.pending_updates.pop(key, None)
-            
-        if not st.session_state.pending_updates:
-            st.session_state.sync_status = "🟢 Synced to database"
-        else:
-            st.session_state.sync_status = "🟡 Pending local changes"
-            
-        st.session_state.last_sync_time = time.time()
-    except Exception as e:
-        st.session_state.sync_status = "🔴 Sync failed"
 
-def handle_slider_change(db_idx, key):
-    if "touched_sliders" not in st.session_state:
-        st.session_state.touched_sliders = {}
-    st.session_state.touched_sliders[f"{db_idx}_{key}"] = True
+        if not st.session_state.pending_updates:
+            st.session_state.sync_status = "🟢 데이터베이스와 동기화됨"
+        else:
+            st.session_state.sync_status = "🟡 로컬 변경사항 대기 중"
+
+        st.session_state.last_sync_time = time.time()
+    except Exception:
+        st.session_state.sync_status = "🔴 동기화 실패"
+
+def handle_note_change(direction, db_idx):
+    note_key = f"note_{direction}_{db_idx}"
+    note = st.session_state.get(note_key, "").strip()
+    ds = get_dir_state(direction)
+    ds["notes"][str(db_idx)] = note
+    token = st.session_state.get("token")
+    if token and st.session_state.get("authenticated"):
+        save_note_to_db(token, direction, db_idx, note)
+
+def handle_slider_change(direction, db_idx, key):
+    touch_key = f"{direction}_{db_idx}_{key}"
+    st.session_state.touched_sliders[touch_key] = True
     st.session_state.show_toast = True
-    
+
     # Get value from slider key
-    slider_key = f"slider_{db_idx}_{key}"
-    score = st.session_state.get(slider_key, 0)
-    
+    slider_key = f"slider_{direction}_{db_idx}_{key}"
+    score = st.session_state.get(slider_key, SCORE_MIN)
+
     # 1. Update local session scores in memory (0ms lag UI response)
+    ds = get_dir_state(direction)
     db_idx_str = str(db_idx)
-    if db_idx_str not in st.session_state.scores:
-        st.session_state.scores[db_idx_str] = {}
-    st.session_state.scores[db_idx_str][key] = score
-    
+    if db_idx_str not in ds["scores"]:
+        ds["scores"][db_idx_str] = {}
+    ds["scores"][db_idx_str][key] = score
+
     # 2. Queue pending update with timestamp for debounced batch flush
-    if "pending_updates" not in st.session_state:
-        st.session_state.pending_updates = {}
-    st.session_state.pending_updates[(db_idx, key)] = {
+    st.session_state.pending_updates[(direction, db_idx, key)] = {
+        "direction": direction,
         "sentence_id": db_idx,
         "model_name": key,
         "score": score,
         "timestamp": time.time()
     }
-    
-    # 3. Transition status to pending local changes
-    st.session_state.sync_status = "🟡 Pending local changes"
 
-def next_sentence():
+    # 3. Transition status to pending local changes
+    st.session_state.sync_status = "🟡 로컬 변경사항 대기 중"
+
+def sync_jump_input(direction, ds):
+    """Keep the '문장 번호로 이동' number input in sync with Prev/Next navigation."""
+    key = f"jump_input_{direction}"
+    if key in st.session_state:
+        st.session_state[key] = ds["index_ptr"] + 1
+
+def handle_jump_input_change(direction):
+    key = f"jump_input_{direction}"
+    ds = get_dir_state(direction)
+    value = st.session_state.get(key, 1)
+    target_ptr = max(0, min(int(value) - 1, len(ds["session_indices"]) - 1))
+    go_to_ptr(direction, target_ptr)
+
+def next_sentence(direction):
     flush_pending_ratings(force=True)
-    if "session_indices" not in st.session_state:
+    ds = get_dir_state(direction)
+    db = all_databases[direction]
+    candidate_keys = candidate_keys_by_direction[direction]
+    if not ds["session_indices"]:
         return
-    ptr = st.session_state.index_ptr
-    s_idx = st.session_state.session_indices[ptr]
-    db_idx = database[s_idx].get("original_index", s_idx)
-    
+    ptr = ds["index_ptr"]
+    s_idx = ds["session_indices"][ptr]
+    db_idx = db[s_idx].get("original_index", s_idx)
+
     # Check if all candidates for the current sentence are rated/touched
     all_rated = True
     for k in candidate_keys:
-        touch_key = f"{db_idx}_{k}"
-        is_touched = st.session_state.get("touched_sliders", {}).get(touch_key, False)
-        if not is_touched:
+        touch_key = f"{direction}_{db_idx}_{k}"
+        if not st.session_state.get("touched_sliders", {}).get(touch_key, False):
             all_rated = False
             break
-            
+
     if all_rated:
-        # Navigate to next
-        if st.session_state.index_ptr < len(st.session_state.session_indices) - 1:
-            st.session_state.index_ptr += 1
-            new_s_idx = st.session_state.session_indices[st.session_state.index_ptr]
-            new_db_idx = database[new_s_idx].get("original_index", new_s_idx)
-            st.session_state.shuffled_candidates.pop(new_db_idx, None)
+        if ds["index_ptr"] < len(ds["session_indices"]) - 1:
+            ds["index_ptr"] += 1
+            new_s_idx = ds["session_indices"][ds["index_ptr"]]
+            new_db_idx = db[new_s_idx].get("original_index", new_s_idx)
+            ds["shuffled_candidates"].pop(new_db_idx, None)
         st.session_state.show_warning = False
     else:
         st.session_state.show_warning = True
+    sync_jump_input(direction, ds)
 
-def prev_sentence():
+def prev_sentence(direction):
     flush_pending_ratings(force=True)
-    if "session_indices" not in st.session_state:
+    ds = get_dir_state(direction)
+    db = all_databases[direction]
+    if not ds["session_indices"]:
         return
-    # Go to prev regardless of validation status
-    if st.session_state.index_ptr > 0:
-        st.session_state.index_ptr -= 1
-        new_s_idx = st.session_state.session_indices[st.session_state.index_ptr]
-        new_db_idx = database[new_s_idx].get("original_index", new_s_idx)
-        st.session_state.shuffled_candidates.pop(new_db_idx, None)
+    if ds["index_ptr"] > 0:
+        ds["index_ptr"] -= 1
+        new_s_idx = ds["session_indices"][ds["index_ptr"]]
+        new_db_idx = db[new_s_idx].get("original_index", new_s_idx)
+        ds["shuffled_candidates"].pop(new_db_idx, None)
     st.session_state.show_warning = False
+    sync_jump_input(direction, ds)
 
-def go_to_ptr(ptr):
+def go_to_ptr(direction, ptr):
     flush_pending_ratings(force=True)
-    if "session_indices" not in st.session_state:
+    ds = get_dir_state(direction)
+    db = all_databases[direction]
+    if not ds["session_indices"]:
         return
-    # Go to target ptr regardless of validation status
-    if 0 <= ptr < len(st.session_state.session_indices):
-        st.session_state.index_ptr = ptr
-        new_s_idx = st.session_state.session_indices[ptr]
-        new_db_idx = database[new_s_idx].get("original_index", new_s_idx)
-        st.session_state.shuffled_candidates.pop(new_db_idx, None)
+    if 0 <= ptr < len(ds["session_indices"]):
+        ds["index_ptr"] = ptr
+        new_s_idx = ds["session_indices"][ptr]
+        new_db_idx = db[new_s_idx].get("original_index", new_s_idx)
+        ds["shuffled_candidates"].pop(new_db_idx, None)
     st.session_state.show_warning = False
+    sync_jump_input(direction, ds)
 
 # Main structure
-st.markdown("<h3 style='text-align: center; margin-top: -0px; margin-bottom: 15px; font-weight: bold;'>Sentence Scorer</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='text-align: center; margin-top: -0px; margin-bottom: 15px; font-weight: bold;'>제주어-표준어 번역 평가</h3>", unsafe_allow_html=True)
 
-if st.session_state.get("new_token_created"):
-    st.info("🔑 **Your anonymous evaluation token has been generated:**", icon="⚠️")
-    st.code(st.session_state.new_token_created, language=None)
-    st.caption("Please copy and save it! You will need it to rejoin this session if your browser crashes or if you change devices.")
-    if st.button("I have copied my token. Dismiss this notice.", type="primary", key="dismiss_token_btn"):
-        st.session_state.new_token_created = None
+# Check if admin is active via query parameter
+is_admin_query = st.query_params.get("admin") == ADMIN_PASSWORD
+
+# --- SIDEBAR CONTROL PANEL ---
+with st.sidebar:
+    st.header("⚙️ 설정 패널")
+
+    st.subheader("🌐 평가 방향")
+    direction_options = list(DIRECTIONS.keys())
+    selected_direction = st.radio(
+        "평가할 방향을 선택하세요:",
+        options=direction_options,
+        format_func=lambda k: DIRECTIONS[k]["label"],
+        index=direction_options.index(st.session_state.direction),
+        key="direction_radio",
+        label_visibility="collapsed",
+    )
+    if selected_direction != st.session_state.direction:
+        flush_pending_ratings(force=True)
+        st.session_state.direction = selected_direction
         st.rerun()
+    st.markdown("---")
 
-if total_sentences == 0:
-    st.info("Please make sure `central_database.json` contains valid sentence objects and is in the same directory.")
-else:
-    # Check if admin is active via query parameter or passcode input
+    current_direction = st.session_state.direction
+    dir_cfg = DIRECTIONS[current_direction]
+    database = all_databases[current_direction]
+    total_sentences = len(database)
+    candidate_keys = candidate_keys_by_direction[current_direction]
+    ds = get_dir_state(current_direction)
 
-    # Check if admin is active via query parameter or passcode input
-    is_admin_query = st.query_params.get("admin") == ADMIN_PASSWORD
+    # Evaluator Identity
+    if st.session_state.get("authenticated") and st.session_state.get("token"):
+        st.subheader("🙋 평가자")
+        st.write(f"**{st.session_state.token}**(으)로 참여 중입니다.")
+        st.caption("같은 번호를 다시 선택하면 이어서 진행할 수 있어요.")
 
-    # --- SIDEBAR CONTROL PANEL ---
-    with st.sidebar:
-        st.header("⚙️ Control Panel")
-
-        # Evaluator Token Display & Copy Widget
-        if st.session_state.get("authenticated") and st.session_state.get("token"):
-            st.subheader("🔑 Evaluator Token")
-            st.code(st.session_state.token, language=None)
-            st.caption("Copy your token to reconnect on other devices.")
-            
-            # Status Indicator Badge
-            status_text = st.session_state.get("sync_status", "🟢 Synced to database")
-            st.markdown(f"**Database Sync Status:**")
-            st.info(f"{status_text}")
-            st.markdown("---")
-
-        # Check periodic auto-sync flush (>0.8s window)
-        flush_pending_ratings(force=False)
-        
-        # Admin Access Passcode
-        st.subheader("🔑 Admin Access")
-        admin_passcode = st.text_input("Enter Passcode:", type="password", help="Enter passcode to unlock evaluation dashboard.")
-        is_admin = is_admin_query or (admin_passcode == ADMIN_PASSWORD)
-        
+        # Status Indicator Badge
+        status_text = st.session_state.get("sync_status", "🟢 데이터베이스와 동기화됨")
+        st.markdown("**데이터베이스 동기화 상태:**")
+        st.info(f"{status_text}")
         st.markdown("---")
-        
-        # Determine mode and show options based on admin status
-        if is_admin:
-            app_mode = st.radio("App Mode", ["📝 Rate Sentences", "📊 Analytics Dashboard", "🔍 Browse Database"])
-        else:
-            app_mode = "📝 Rate Sentences"
-            st.info("🔒 Enter the admin passcode to access ")
-        
+
+    # Check periodic auto-sync flush (>0.8s window)
+    flush_pending_ratings(force=False)
+
+    # Admin Access Passcode
+    st.subheader("🔑 관리자 접근")
+    admin_passcode = st.text_input("암호를 입력하세요:", type="password", help="암호를 입력하면 평가 대시보드에 접근할 수 있습니다.")
+    is_admin = is_admin_query or (admin_passcode == ADMIN_PASSWORD)
+
+    st.markdown("---")
+
+    # Determine mode and show options based on admin status
+    if is_admin:
+        app_mode = st.radio("앱 모드", ["📝 문장 평가", "📊 분석 대시보드", "🔍 데이터베이스 찾아보기"])
+    else:
+        app_mode = "📝 문장 평가"
+        st.info("🔒 관리자 암호를 입력하면 대시보드에 접근할 수 있습니다.")
+
+    if total_sentences > 0:
         # Scoring Progress in current session
-        session_size = len(st.session_state.session_indices)
+        session_size = len(ds["session_indices"])
         session_rated_count = 0
-        for s_idx in st.session_state.session_indices:
+        for s_idx in ds["session_indices"]:
             item = database[s_idx]
             db_idx = item.get("original_index", s_idx)
             db_idx_str = str(db_idx)
-            if db_idx_str in st.session_state.scores:
-                scores_dict = st.session_state.scores[db_idx_str]
+            if db_idx_str in ds["scores"]:
+                scores_dict = ds["scores"][db_idx_str]
                 # Count as rated only if all candidate keys have an actual selection (not None)
                 if all(scores_dict.get(k) is not None for k in candidate_keys):
                     session_rated_count += 1
         session_completion_pct = (session_rated_count / session_size) * 100 if session_size > 0 else 0
-        
-        st.subheader("Session Progress")
-        st.write(f"Rated: **{session_rated_count}** / {session_size} ({session_completion_pct:.1f}%)")
-        st.progress(session_completion_pct / 100.0)
-        
-        # Jump to sentence dropdown (session scope)
-        st.markdown("---")
-        st.subheader("🎯 Quick Navigation")
-        jump_options = {f"Sentence {i+1}": i for i in range(session_size)}
-        selected_jump = st.selectbox(
-            "Jump to Sentence:", 
-            options=list(jump_options.keys()), 
-            index=st.session_state.index_ptr,
-            label_visibility="collapsed"
-        )
-        target_ptr = jump_options[selected_jump]
-        if target_ptr != st.session_state.index_ptr:
-            go_to_ptr(target_ptr)
-            st.rerun()
 
-        # Save and Download Panel - ONLY shown to admin
-        if is_admin:
-            st.markdown("---")
-            st.subheader("💾 Export & Data Management")
-            
-            # Flush any pending local changes before building export data
-            flush_pending_ratings(force=True)
-            
-            # Pull records exclusively for active evaluator token
-            current_tok = st.session_state.get("token", "")
-            token_rows = load_ratings_rows_by_token(current_tok) if current_tok else []
-            export_dict = {}
-            for token, s_idx, model, score in token_rows:
-                if token not in export_dict:
-                    export_dict[token] = {}
-                s_idx_str = str(s_idx)
-                if s_idx_str not in export_dict[token]:
-                    export_dict[token][s_idx_str] = {}
-                export_dict[token][s_idx_str][model] = score
-            
-            # Download JSON
-            json_scores = json.dumps(export_dict, indent=2, ensure_ascii=False)
+        st.subheader("진행 상황")
+        st.write(f"평가 완료: **{session_rated_count}** / {session_size} ({session_completion_pct:.1f}%)")
+        st.progress(session_completion_pct / 100.0)
+
+        # Jump to sentence by number (session scope)
+        st.markdown("---")
+        st.subheader("🎯 빠른 이동")
+        jump_key = f"jump_input_{current_direction}"
+        if jump_key not in st.session_state:
+            st.session_state[jump_key] = ds["index_ptr"] + 1
+        st.number_input(
+            "문장 번호로 이동:",
+            min_value=1,
+            max_value=session_size,
+            step=1,
+            key=jump_key,
+            label_visibility="collapsed",
+            on_change=handle_jump_input_change,
+            args=(current_direction,),
+        )
+
+    # Save and Download Panel - ONLY shown to admin
+    if is_admin:
+        st.markdown("---")
+        st.subheader("💾 내보내기 및 데이터 관리")
+
+        # Flush any pending local changes before building export data
+        flush_pending_ratings(force=True)
+
+        # Pull records exclusively for active evaluator token (all directions)
+        current_tok = st.session_state.get("token", "")
+        token_rows = load_ratings_rows_by_token(current_tok) if current_tok else []
+        export_dict = {}
+        for token, row_direction, s_idx, model, score in token_rows:
+            export_dict.setdefault(token, {}).setdefault(row_direction, {}).setdefault(str(s_idx), {})[model] = score
+
+        # Download JSON
+        json_scores = json.dumps(export_dict, indent=2, ensure_ascii=False)
+        st.download_button(
+            label="📥 내 점수 다운로드 (JSON)",
+            data=json_scores,
+            file_name=f"jejueo_scores_{current_tok}.json" if current_tok else "jejueo_scores.json",
+            mime="application/json",
+            use_container_width=True
+        )
+
+        # Download CSV
+        if token_rows:
+            rows = []
+            for token, row_direction, s_idx, model, score in token_rows:
+                rows.append({
+                    "평가자": token,
+                    "방향": DIRECTIONS.get(row_direction, {}).get("label", row_direction),
+                    "문장번호": s_idx,
+                    "모델명": model,
+                    "점수": score,
+                    "원문": db_by_original_index.get(row_direction, {}).get(s_idx, {}).get("source", ""),
+                })
+            df_export = pd.DataFrame(rows)
+            csv_scores = df_export.to_csv(index=False, encoding='utf-8-sig')
             st.download_button(
-                label="📥 Download My Scores (JSON)",
-                data=json_scores,
-                file_name=f"llm_scores_{current_tok}.json" if current_tok else "llm_scores.json",
-                mime="application/json",
+                label="📥 내 점수 다운로드 (CSV)",
+                data=csv_scores,
+                file_name=f"jejueo_scores_{current_tok}.csv" if current_tok else "jejueo_scores.csv",
+                mime="text/csv",
                 use_container_width=True
             )
-            
-            # Download CSV
-            if token_rows:
-                rows = []
-                for token, s_idx, model, score in token_rows:
-                    rows.append({
-                        "token": token,
-                        "sentence_id": s_idx,
-                        "model_name": model,
-                        "score": score,
-                        "source": db_by_original_index.get(s_idx, {}).get("source", ""),
-                        "reference": db_by_original_index.get(s_idx, {}).get("reference", "")
-                    })
-                df_export = pd.DataFrame(rows)
-                csv_scores = df_export.to_csv(index=False, encoding='utf-8-sig')
-                st.download_button(
-                    label="📥 Download My Scores (CSV)",
-                    data=csv_scores,
-                    file_name=f"llm_scores_{current_tok}.csv" if current_tok else "llm_scores.csv",
-                    mime="text/csv",
-                    use_container_width=True
-                )
 
-            # Reset ratings
-            st.markdown("<br><br>", unsafe_allow_html=True)
-            if st.button("⚠️ Reset All Scores", type="secondary", use_container_width=True):
-                flush_pending_ratings(force=True)
-                delete_ratings_by_token(st.session_state.token)
-                st.session_state.scores = {}
-                st.session_state.touched_sliders = {}
-                for k in list(st.session_state.keys()):
-                    if k.startswith("slider_"):
-                        del st.session_state[k]
-                st.toast("Your ratings have been reset!", icon="✅")
-                st.rerun()
-
-    # --- MAIN CONTENT AREA ---
-    
-    # Mode 1: Rating Interface
-    if app_mode == "📝 Rate Sentences":
-        ptr = st.session_state.index_ptr
-        s_idx = st.session_state.session_indices[ptr]
-        current_item = database[s_idx]
-        db_idx = current_item.get("original_index", s_idx)
-        session_size = len(st.session_state.session_indices)
-        
-        # Show warning at the top of navigation (Next button is nearby)
-        if st.session_state.get("show_warning", False):
-            st.warning("Warning: There are still candidate sentences on the current page that have not been rated. Please check and complete all ratings before submitting again!")
-
-        # Navigation buttons layout - compact text size
-        col_prev, col_num, col_next = st.columns([1, 2, 1])
-        with col_prev:
-            st.button("⏮️ Previous", on_click=prev_sentence, disabled=(ptr == 0), use_container_width=True)
-        with col_num:
-            if is_admin:
-                st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.1rem; margin-top: 5px;'>Sentence {ptr + 1} / {session_size} (Database ID: #{db_idx})</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.1rem; margin-top: 5px;'>Sentence {ptr + 1} / {session_size}</div>", unsafe_allow_html=True)
-        with col_next:
-            st.button("Next ⏭️", on_click=next_sentence, disabled=(ptr == session_size - 1), use_container_width=True)
-
-        # Rating Guidelines Expander
-        with st.expander("📖 View Rating Guidelines & Dimensions", expanded=False):
-            st.markdown("""
-            **Please evaluate the candidate sentences based on the following four dimensions:**
-            
-            1. 🎯 **Faithfulness**: Does the candidate preserve the original meaning of the source sentence without adding, omitting, or distorting key information?
-            2. ✍️ **Grammaticality**: Is the candidate grammatically correct, fluent, natural, and free of syntax errors?
-            3. 🔄 **Syntactic Structuring**: Does the candidate restructure the syntax of the source sentence instead of just copying the grammatical frame?
-            4. 🔀 **Lexical Diversity**: Does the candidate use diverse vocabulary and synonyms rather than repeating the exact words of the source sentence?
-            
-            *Score range is **1** (worst) to **10** (best).*
-            """)
-            
-        # Display Source in clean container (Reference is now a blind candidate)
-        st.markdown(f"""
-        <div class="source-container">
-            <div class="container-title" style="color: #FF9800;">Source Sentence</div>
-            <div>{escape_html_display(current_item.get('source', ''))}</div>
-        </div>
-        """, unsafe_allow_html=True)
-            
-        st.markdown("<hr style='margin:10px 0;' />", unsafe_allow_html=True)
-
-        # Stable shuffle management for Blind Rating
-        if BLIND_RATING:
-            if db_idx not in st.session_state.shuffled_candidates:
-                # Shuffle the keys for this index and save them
-                shuffled_keys = candidate_keys.copy()
-                random.shuffle(shuffled_keys)
-                st.session_state.shuffled_candidates[db_idx] = shuffled_keys
-            display_order = st.session_state.shuffled_candidates[db_idx]
-        else:
-            display_order = candidate_keys
-
-        # Retrieve existing scores for the current sentence
-        existing_item_scores = st.session_state.scores.get(str(db_idx), {})
-        
-        # Initialize touched status for the current sentence
-        if "touched_sliders" not in st.session_state:
+        # Reset ratings
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        if st.button("⚠️ 모든 방향의 점수 초기화", type="secondary", use_container_width=True):
+            flush_pending_ratings(force=True)
+            delete_ratings_by_token(st.session_state.token)
+            st.session_state.dir_state = {}
             st.session_state.touched_sliders = {}
-            
-        for k in candidate_keys:
-            touch_key = f"{db_idx}_{k}"
-            if k in existing_item_scores and touch_key not in st.session_state.touched_sliders:
-                st.session_state.touched_sliders[touch_key] = True
+            for k in list(st.session_state.keys()):
+                if k.startswith("slider_"):
+                    del st.session_state[k]
+            st.toast("점수가 초기화되었습니다!", icon="✅")
+            st.rerun()
 
-        # Column headers for Candidate and Score columns
-        col_hdr_left, col_hdr_right = st.columns([6.5, 3.5], gap="medium")
-        with col_hdr_left:
-            st.markdown("<span style='font-size: 0.9rem; font-weight: bold; color: var(--text-color);'>🔍 Candidate Sentences</span>", unsafe_allow_html=True)
-        with col_hdr_right:
-            st.markdown("<div style='text-align: right; padding-right: 15px; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📊 Score (0-10), higher is better</div>", unsafe_allow_html=True)
+# --- MAIN CONTENT AREA ---
 
-        # Render candidate rows inside standard bordered containers
-        updated_item_scores = {}
-        for rank, key in enumerate(display_order):
-            candidate_text = current_item.get(key, "*(empty)*")
-            display_name = f"Candidate {chr(65 + rank)}" if BLIND_RATING else f"Model: {key}"
-            existing_score = existing_item_scores.get(key, 0)
-            
-            slider_key = f"slider_{db_idx}_{key}"
-            if slider_key not in st.session_state:
-                st.session_state[slider_key] = existing_score
-                
-            container_key = f"container_{db_idx}_{key}"
-            with st.container(border=True, key=container_key):
-                col_text, col_rating = st.columns([6.5, 3.5], gap="medium")
-                with col_text:
-                    st.markdown(f"<div class='container-title' style='color: #2196F3; margin-bottom: 2px;'>{display_name}</div>", unsafe_allow_html=True)
-                    st.markdown(escape_html_display(candidate_text), unsafe_allow_html=True)
-                with col_rating:
-                    score = st.slider(
-                        label=f"Rate {display_name}",
-                        min_value=0,
-                        max_value=10,
-                        value=int(st.session_state[slider_key]),
-                        step=1,
-                        key=slider_key,
-                        label_visibility="collapsed",
-                        on_change=handle_slider_change,
-                        args=(db_idx, key)
-                    )
-            updated_item_scores[key] = score
+if total_sentences == 0:
+    st.info(f"`{dir_cfg['path']}` 파일에 올바른 문장 데이터가 있는지 확인해주세요.")
 
-        # Collect and inject custom CSS for touched sliders to turn them green
-        touched_css_rules = []
-        for k in candidate_keys:
-            touch_key = f"{db_idx}_{k}"
-            slider_key = f"slider_{db_idx}_{k}"
-            container_key = f"container_{db_idx}_{k}"
-            is_touched = st.session_state.get("touched_sliders", {}).get(touch_key, False)
-            if is_touched and slider_key in st.session_state:
-                val = st.session_state[slider_key]
-                pct = int(val) * 10
-                touched_css_rules.append(f"""
-                /* Target the thumb (handle) */
-                .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"],
-                .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"] {{
-                    background-color: #2e7d32 !important;
-                }}
-                /* Hover / Focus effects */
-                .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"]:hover,
-                .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"]:hover {{
-                    box-shadow: 0px 0px 0px 10px rgba(46, 125, 50, 0.16) !important;
-                }}
-                .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"]:focus,
-                .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"]:focus {{
-                    box-shadow: 0px 0px 0px 10px rgba(46, 125, 50, 0.24) !important;
-                }}
-                /* Target the track background / fill */
-                .st-key-{slider_key} div[data-baseweb="slider"] > div > div,
-                .st-key-{container_key} div[data-baseweb="slider"] > div > div {{
-                    background: linear-gradient(to right, #4caf50 0%, #4caf50 {pct}%, var(--secondary-background-color) {pct}%, var(--secondary-background-color) 100%) !important;
-                }}
-                /* Target the tick bar if it uses stTickBar */
-                .st-key-{slider_key} div[data-testid="stTickBar"],
-                .st-key-{container_key} div[data-testid="stTickBar"] {{
-                    background: linear-gradient(to right, #4caf50 0%, #4caf50 {pct}%, var(--secondary-background-color) {pct}%, var(--secondary-background-color) 100%) !important;
-                }}
-                """)
-        if touched_css_rules:
-            st.markdown(f"<style>{''.join(touched_css_rules)}</style>", unsafe_allow_html=True)
+# Mode 1: Rating Interface
+elif app_mode == "📝 문장 평가":
+    ptr = ds["index_ptr"]
+    s_idx = ds["session_indices"][ptr]
+    current_item = database[s_idx]
+    db_idx = current_item.get("original_index", s_idx)
+    session_size = len(ds["session_indices"])
 
-        # Show toast if flag is set
-        if st.session_state.get("show_toast", False):
-            st.toast("Rating updated!", icon="💾")
-            st.session_state.show_toast = False
+    # Show warning at the top of navigation (Next button is nearby)
+    if st.session_state.get("show_warning", False):
+        st.warning("아직 평가하지 않은 후보 문장이 있습니다. 모두 평가한 후 다시 진행해주세요!")
 
-        # Quick Save indicator
+    # Navigation buttons layout - compact text size
+    col_prev, col_num, col_next = st.columns([1, 2, 1])
+    with col_prev:
+        st.button("⏮️ 이전", on_click=prev_sentence, args=(current_direction,), disabled=(ptr == 0), use_container_width=True)
+    with col_num:
         if is_admin:
-            st.caption(f"✓ Current Sentence #{db_idx} rating: { {k: v for k, v in updated_item_scores.items()} }")
+            st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.1rem; margin-top: 5px;'>문장 {ptr + 1} / {session_size} (DB 번호: #{db_idx})</div>", unsafe_allow_html=True)
         else:
-            st.caption("✓ Ratings updated locally. Submit by clicking Next.")
+            st.markdown(f"<div style='text-align: center; font-weight: bold; font-size: 1.1rem; margin-top: 5px;'>문장 {ptr + 1} / {session_size}</div>", unsafe_allow_html=True)
+    with col_next:
+        st.button("다음 ⏭️", on_click=next_sentence, args=(current_direction,), disabled=(ptr == session_size - 1), use_container_width=True)
 
-    # Mode 2: Analytics Dashboard
-    elif app_mode == "📊 Analytics Dashboard":
-        st.subheader("📊 Evaluation Analytics Dashboard")
-        
-        all_rows = load_all_ratings_from_db()
-        if not all_rows:
-            st.info("No ratings collected yet. Please rate some sentences first to view analytics!")
+    # Rating Guidelines Expander
+    with st.expander("📖 평가 지침 보기", expanded=False):
+        st.markdown(f"""
+        **아래 각 후보 문장이 원문의 의미를 얼마나 정확하고 자연스럽게 담고 있는지 0~100점 사이로 평가해주세요.**
+
+        - **0점**: 원문의 의미와 전혀 관련이 없거나 이해할 수 없는 문장
+        - **100점**: 원문의 의미를 완벽하고 자연스럽게 담고 있는 문장
+
+        이 평가는 WMT(Workshop on Machine Translation)의 **직접 평가(Direct Assessment, DA)** 방식을 따릅니다.
+        문법이나 어휘 선택 하나하나보다는, **의미 전달의 정확성과 자연스러움**을 종합적으로 고려하여 점수를 매겨주세요.
+
+        각 문장 아래에는 **특이사항**을 적을 수 있는 칸이 있습니다. 번역이 이상하거나, 원문 자체가 어색하거나,
+        점수로 표현하기 애매한 부분 등 눈에 띄는 점이 있으면 편하게 적어주세요. (선택사항이며, 비워두셔도 됩니다)
+
+        *현재 평가 방향: **{dir_cfg['label']}***
+        """)
+
+    # Display Source in clean container
+    st.markdown(f"""
+    <div class="source-container">
+        <div class="container-title" style="color: #FF9800;">{dir_cfg['source_label']}</div>
+        <div>{escape_html_display(current_item.get('source', ''))}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("<hr style='margin:10px 0;' />", unsafe_allow_html=True)
+
+    # Stable shuffle management for Blind Rating
+    if BLIND_RATING:
+        if db_idx not in ds["shuffled_candidates"]:
+            # Shuffle the keys for this index and save them
+            shuffled_keys = candidate_keys.copy()
+            random.shuffle(shuffled_keys)
+            ds["shuffled_candidates"][db_idx] = shuffled_keys
+        display_order = ds["shuffled_candidates"][db_idx]
+    else:
+        display_order = candidate_keys
+
+    # Retrieve existing scores for the current sentence
+    existing_item_scores = ds["scores"].get(str(db_idx), {})
+
+    # Initialize touched status for the current sentence
+    for k in candidate_keys:
+        touch_key = f"{current_direction}_{db_idx}_{k}"
+        if k in existing_item_scores and touch_key not in st.session_state.touched_sliders:
+            st.session_state.touched_sliders[touch_key] = True
+
+    # Column headers for Candidate and Score columns
+    col_hdr_left, col_hdr_right = st.columns([6.5, 3.5], gap="medium")
+    with col_hdr_left:
+        st.markdown(f"<span style='font-size: 0.9rem; font-weight: bold; color: var(--text-color);'>🔍 {dir_cfg['candidate_label']} 문장</span>", unsafe_allow_html=True)
+    with col_hdr_right:
+        st.markdown("<div style='text-align: right; padding-right: 15px; font-size: 0.85rem; font-weight: bold; color: var(--text-color);'>📊 점수 (0~100), 높을수록 좋음</div>", unsafe_allow_html=True)
+
+    # Render candidate rows inside standard bordered containers
+    updated_item_scores = {}
+    for rank, key in enumerate(display_order):
+        candidate_text = current_item.get(key, "*(비어 있음)*")
+        ordinal = KOREAN_ORDINALS[rank] if rank < len(KOREAN_ORDINALS) else str(rank + 1)
+        display_name = f"{dir_cfg['candidate_label']} {ordinal}" if BLIND_RATING else f"모델: {key}"
+        existing_score = existing_item_scores.get(key, SCORE_MIN)
+
+        slider_key = f"slider_{current_direction}_{db_idx}_{key}"
+        if slider_key not in st.session_state:
+            st.session_state[slider_key] = existing_score
+
+        container_key = f"container_{current_direction}_{db_idx}_{key}"
+        with st.container(border=True, key=container_key):
+            col_text, col_rating = st.columns([6.5, 3.5], gap="medium")
+            with col_text:
+                st.markdown(f"<div class='container-title' style='color: #2196F3; margin-bottom: 2px;'>{display_name}</div>", unsafe_allow_html=True)
+                st.markdown(escape_html_display(candidate_text), unsafe_allow_html=True)
+            with col_rating:
+                score = st.slider(
+                    label=f"{display_name} 평가",
+                    min_value=SCORE_MIN,
+                    max_value=SCORE_MAX,
+                    step=1,
+                    key=slider_key,
+                    label_visibility="collapsed",
+                    on_change=handle_slider_change,
+                    args=(current_direction, db_idx, key)
+                )
+        updated_item_scores[key] = score
+
+    # Optional per-sentence note (not tied to any single candidate)
+    st.markdown("<hr style='margin:10px 0;' />", unsafe_allow_html=True)
+    st.markdown("<span style='font-size: 0.9rem; font-weight: bold; color: var(--text-color);'>📝 특이사항 (선택사항)</span>", unsafe_allow_html=True)
+    st.caption("번역이 이상하거나, 원문이 어색하거나, 그 밖에 눈에 띄는 점이 있으면 자유롭게 적어주세요.")
+    note_key = f"note_{current_direction}_{db_idx}"
+    if note_key not in st.session_state:
+        st.session_state[note_key] = ds["notes"].get(str(db_idx), "")
+    st.text_area(
+        "이 문장에 대한 특이사항:",
+        key=note_key,
+        placeholder="이 문장에서 특별히 눈에 띄는 점이 있으면 자유롭게 적어주세요. (평가 제출과 무관하며, 비워두셔도 됩니다)",
+        label_visibility="collapsed",
+        on_change=handle_note_change,
+        args=(current_direction, db_idx),
+    )
+
+    # Collect and inject custom CSS for touched sliders to turn them green
+    touched_css_rules = []
+    for k in candidate_keys:
+        touch_key = f"{current_direction}_{db_idx}_{k}"
+        slider_key = f"slider_{current_direction}_{db_idx}_{k}"
+        container_key = f"container_{current_direction}_{db_idx}_{k}"
+        is_touched = st.session_state.get("touched_sliders", {}).get(touch_key, False)
+        if is_touched and slider_key in st.session_state:
+            val = st.session_state[slider_key]
+            pct = int(val)
+            touched_css_rules.append(f"""
+            /* Target the thumb (handle) */
+            .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"],
+            .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"] {{
+                background-color: #2e7d32 !important;
+            }}
+            /* Hover / Focus effects */
+            .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"]:hover,
+            .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"]:hover {{
+                box-shadow: 0px 0px 0px 10px rgba(46, 125, 50, 0.16) !important;
+            }}
+            .st-key-{slider_key} div[data-baseweb="slider"] div[role="slider"]:focus,
+            .st-key-{container_key} div[data-baseweb="slider"] div[role="slider"]:focus {{
+                box-shadow: 0px 0px 0px 10px rgba(46, 125, 50, 0.24) !important;
+            }}
+            /* Target the track background / fill */
+            .st-key-{slider_key} div[data-baseweb="slider"] > div > div,
+            .st-key-{container_key} div[data-baseweb="slider"] > div > div {{
+                background: linear-gradient(to right, #4caf50 0%, #4caf50 {pct}%, var(--secondary-background-color) {pct}%, var(--secondary-background-color) 100%) !important;
+            }}
+            /* Target the tick bar if it uses stTickBar */
+            .st-key-{slider_key} div[data-testid="stTickBar"],
+            .st-key-{container_key} div[data-testid="stTickBar"] {{
+                background: linear-gradient(to right, #4caf50 0%, #4caf50 {pct}%, var(--secondary-background-color) {pct}%, var(--secondary-background-color) 100%) !important;
+            }}
+            """)
+    if touched_css_rules:
+        st.markdown(f"<style>{''.join(touched_css_rules)}</style>", unsafe_allow_html=True)
+
+    # Show toast if flag is set
+    if st.session_state.get("show_toast", False):
+        st.toast("평가가 저장되었습니다!", icon="💾")
+        st.session_state.show_toast = False
+
+    # Quick Save indicator
+    if is_admin:
+        st.caption(f"✓ 현재 문장 #{db_idx} 점수: { {k: v for k, v in updated_item_scores.items()} }")
+    else:
+        st.caption("✓ 평가가 로컬에 저장되었습니다. '다음'을 눌러 제출하세요.")
+
+# Mode 2: Analytics Dashboard
+elif app_mode == "📊 분석 대시보드":
+    st.subheader("📊 평가 분석 대시보드")
+
+    all_rows = load_all_ratings_from_db()
+    if not all_rows:
+        st.info("아직 수집된 평가가 없습니다. 먼저 문장을 평가해주세요!")
+    else:
+        # Prepare data
+        scores_list = []
+        for token, row_direction, s_idx, model, score in all_rows:
+            scores_list.append({
+                "평가자": token,
+                "방향": DIRECTIONS.get(row_direction, {}).get("label", row_direction),
+                "문장번호": s_idx,
+                "모델": model,
+                "점수": score
+            })
+        df = pd.DataFrame(scores_list)
+
+        # Optional direction filter for analytics
+        direction_filter_options = ["전체"] + [cfg["label"] for cfg in DIRECTIONS.values()]
+        direction_filter = st.selectbox("방향 필터:", direction_filter_options)
+        if direction_filter != "전체":
+            df = df[df["방향"] == direction_filter]
+
+        if df.empty:
+            st.info("선택한 방향에 대한 평가 데이터가 없습니다.")
         else:
-            # Prepare data
-            scores_list = []
-            for token, s_idx, model, score in all_rows:
-                scores_list.append({
-                    "Token": token,
-                    "Sentence Index": s_idx,
-                    "Model": model,
-                    "Score": score
-                })
-            df = pd.DataFrame(scores_list)
-            
             # KPI Metrics
-            total_rated_sessions = df["Sentence Index"].nunique()
-            
+            total_rated_sentences = df["문장번호"].nunique()
+
             col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
             with col_kpi1:
-                st.metric("Total Sentences Rated", f"{total_rated_sessions} / {total_sentences}")
+                st.metric("평가된 문장 수", f"{total_rated_sentences} / {total_sentences}")
             with col_kpi2:
-                overall_avg = df["Score"].mean()
-                st.metric("Overall Average Rating", f"{overall_avg:.2f} / 10")
+                overall_avg = df["점수"].mean()
+                st.metric("전체 평균 점수", f"{overall_avg:.2f} / 100")
             with col_kpi3:
-                model_with_highest_avg = df.groupby("Model")["Score"].mean().idxmax()
-                highest_avg_score = df.groupby("Model")["Score"].mean().max()
-                st.metric("Top Model", f"{model_with_highest_avg}", f"{highest_avg_score:.2f} avg")
+                model_with_highest_avg = df.groupby("모델")["점수"].mean().idxmax()
+                highest_avg_score = df.groupby("모델")["점수"].mean().max()
+                st.metric("최고 평균 모델", f"{model_with_highest_avg}", f"{highest_avg_score:.2f}점")
 
             st.markdown("---")
-            
+
             col_chart1, col_chart2 = st.columns(2)
-            
+
             with col_chart1:
-                st.markdown("### 🏆 Average Score by Model")
-                avg_scores = df.groupby("Model")["Score"].mean().reset_index().sort_values(by="Score", ascending=False)
-                # Plotly or standard bar chart
-                st.bar_chart(avg_scores.set_index("Model"), y="Score", color="#FF4B4B")
-                
-                # Show tabular view of averages
+                st.markdown("### 🏆 모델별 평균 점수")
+                avg_scores = df.groupby("모델")["점수"].mean().reset_index().sort_values(by="점수", ascending=False)
+                st.bar_chart(avg_scores.set_index("모델"), y="점수", color="#FF4B4B")
+
                 st.dataframe(
-                    avg_scores.rename(columns={"Score": "Average Score"}).style.format({"Average Score": "{:.2f}"}),
+                    avg_scores.rename(columns={"점수": "평균 점수"}).style.format({"평균 점수": "{:.2f}"}),
                     use_container_width=True
                 )
-                
+
             with col_chart2:
-                st.markdown("### 📈 Score Distribution by Model")
-                # Frequency of scores
-                pivot_df = df.pivot_table(index="Score", columns="Model", aggfunc="size", fill_value=0)
+                st.markdown("### 📈 모델별 점수 분포")
+                pivot_df = df.pivot_table(index="점수", columns="모델", aggfunc="size", fill_value=0)
                 st.line_chart(pivot_df)
-                
-                # Model statistics table
-                st.markdown("#### Model Performance Metrics")
-                stats_df = df.groupby("Model")["Score"].agg(["count", "mean", "std", "min", "median", "max"]).reset_index()
-                stats_df.columns = ["Model", "Ratings Count", "Mean Score", "Std Dev", "Min", "Median", "Max"]
+
+                st.markdown("#### 모델 성능 지표")
+                stats_df = df.groupby("모델")["점수"].agg(["count", "mean", "std", "min", "median", "max"]).reset_index()
+                stats_df.columns = ["모델", "평가 수", "평균 점수", "표준편차", "최소", "중앙값", "최대"]
                 st.dataframe(
                     stats_df.style.format({
-                        "Mean Score": "{:.2f}",
-                        "Std Dev": "{:.2f}"
+                        "평균 점수": "{:.2f}",
+                        "표준편차": "{:.2f}"
                     }),
                     use_container_width=True,
                     hide_index=True
                 )
 
             st.markdown("---")
-            st.markdown("### 🧐 Model Disagreement (Highest Discrepancy)")
-            st.write("These are the sentences where candidate models received the most varied scores (highest standard deviation). These are excellent cases for qualitative analysis.")
-            
-            # Calculate standard deviation of scores per sentence index
-            disagreement = df.groupby("Sentence Index")["Score"].std().reset_index()
-            disagreement.columns = ["Sentence Index", "Score StdDev"]
-            top_disagreement = disagreement.sort_values(by="Score StdDev", ascending=False).head(5)
-            
+            st.markdown("### 🧐 모델 간 의견 차이 (표준편차 상위)")
+            st.write("아래는 모델 간 점수 편차(표준편차)가 가장 큰 문장들입니다. 정성적 분석에 유용합니다.")
+
+            # Calculate standard deviation of scores per sentence index (within selected direction scope)
+            disagreement = df.groupby(["방향", "문장번호"])["점수"].std().reset_index()
+            disagreement.columns = ["방향", "문장번호", "점수 표준편차"]
+            top_disagreement = disagreement.sort_values(by="점수 표준편차", ascending=False).head(5)
+
+            direction_label_to_key = {cfg["label"]: d for d, cfg in DIRECTIONS.items()}
             for rank, (_, row) in enumerate(top_disagreement.iterrows()):
-                s_idx = int(row["Sentence Index"])
-                std_val = row["Score StdDev"]
-                item = db_by_original_index.get(s_idx, {})
-                
-                # Calculate average score per model for this sentence index
-                sentence_df = df[df["Sentence Index"] == s_idx]
-                avg_ratings = sentence_df.groupby("Model")["Score"].mean().to_dict()
-                
-                st.markdown(f"#### #{rank+1}. Sentence Index {s_idx} (Score StdDev: {std_val:.2f})")
-                st.markdown(f"**Source**: {item.get('source', '')}")
-                st.markdown(f"**Reference**: {item.get('reference', '')}")
-                
-                # Present average ratings table
+                row_direction_label = row["방향"]
+                row_direction_key = direction_label_to_key.get(row_direction_label)
+                s_idx = int(row["문장번호"])
+                std_val = row["점수 표준편차"]
+                item = db_by_original_index.get(row_direction_key, {}).get(s_idx, {})
+
+                sentence_df = df[(df["방향"] == row_direction_label) & (df["문장번호"] == s_idx)]
+                avg_ratings = sentence_df.groupby("모델")["점수"].mean().to_dict()
+
+                st.markdown(f"#### #{rank+1}. [{row_direction_label}] 문장 번호 {s_idx} (점수 표준편차: {std_val:.2f})")
+                st.markdown(f"**원문**: {item.get('source', '')}")
+
                 cols = st.columns(len(avg_ratings))
                 for c_idx, (model_name, avg_score) in enumerate(avg_ratings.items()):
                     with cols[c_idx]:
-                        st.metric(label=model_name, value=f"{avg_score:.2f}/10")
+                        st.metric(label=model_name, value=f"{avg_score:.2f}/100")
                 st.markdown("<hr style='margin:10px 0; border:0; border-top:1px dashed #ccc;' />", unsafe_allow_html=True)
 
-    # Mode 3: Browse Database
-    elif app_mode == "🔍 Browse Database":
-        st.subheader("🔍 Browse Database & Ratings")
-        st.write("Browse all sentences from the database alongside their ratings.")
-        
-        browse_data = []
-        for i, item in enumerate(database):
-            orig_idx = item.get("original_index", i)
-            has_rated = "Yes" if str(orig_idx) in st.session_state.scores else "No"
-            row = {
-                "Index": orig_idx,
-                "Rated": has_rated,
-                "Source": item.get("source", ""),
-                "Reference": item.get("reference", ""),
-            }
-            # Add scores if rated
-            if str(orig_idx) in st.session_state.scores:
-                for key in candidate_keys:
-                    row[f"Score ({key})"] = st.session_state.scores[str(orig_idx)].get(key, "")
-            else:
-                for key in candidate_keys:
-                    row[f"Score ({key})"] = ""
-            browse_data.append(row)
-            
-        df_browse = pd.DataFrame(browse_data)
-        
-        # Filter options
-        filter_rated = st.selectbox("Filter ratings:", ["All Sentences", "Only Rated", "Only Unrated"])
-        if filter_rated == "Only Rated":
-            df_filtered = df_browse[df_browse["Rated"] == "Yes"]
-        elif filter_rated == "Only Unrated":
-            df_filtered = df_browse[df_browse["Rated"] == "No"]
+# Mode 3: Browse Database
+elif app_mode == "🔍 데이터베이스 찾아보기":
+    st.subheader("🔍 데이터베이스 찾아보기")
+    st.write(f"'{dir_cfg['label']}' 방향의 전체 문장과 평가 결과를 확인할 수 있습니다.")
+
+    browse_data = []
+    for i, item in enumerate(database):
+        orig_idx = item.get("original_index", i)
+        has_rated = "예" if str(orig_idx) in ds["scores"] else "아니오"
+        row = {
+            "번호": orig_idx,
+            "평가 여부": has_rated,
+            "원문": item.get("source", ""),
+        }
+        if str(orig_idx) in ds["scores"]:
+            for key in candidate_keys:
+                row[f"점수 ({key})"] = ds["scores"][str(orig_idx)].get(key, "")
         else:
-            df_filtered = df_browse
-            
-        # Search functionality
-        search_query = st.text_input("🔍 Search sentences by text:")
-        if search_query:
-            df_filtered = df_filtered[
-                df_filtered["Source"].str.contains(search_query, case=False, na=False) | 
-                df_filtered["Reference"].str.contains(search_query, case=False, na=False)
-            ]
-            
-        st.write(f"Showing {len(df_filtered)} records.")
-        st.dataframe(df_filtered, use_container_width=True, hide_index=True)
+            for key in candidate_keys:
+                row[f"점수 ({key})"] = ""
+        row["특이사항"] = ds["notes"].get(str(orig_idx), "")
+        browse_data.append(row)
 
-    # 6. Copy Prevention Script (with exemption for user tokens and code blocks)
-    components.html("""
-    <script>
-        function isCopyable(el) {
-            if (!el) return false;
-            if (el.nodeType === 3) el = el.parentElement;
-            return !!(el && el.closest && el.closest('code, .stCodeBlock, pre, .copyable-token, [data-testid="stCodeBlock"], input'));
-        }
+    df_browse = pd.DataFrame(browse_data)
 
-        try {
-            // Prevent context menu (right-click) on parent window unless copyable element
-            window.parent.document.addEventListener('contextmenu', function(e) {
-                if (!isCopyable(e.target)) {
-                    e.preventDefault();
-                }
-            });
-            // Prevent copy event on parent window unless copyable element or selection
-            window.parent.document.addEventListener('copy', function(e) {
-                var sel = window.parent.getSelection();
-                var anchor = sel ? sel.anchorNode : null;
-                if (isCopyable(anchor) || isCopyable(e.target)) {
-                    return; // Allow copy
-                }
+    # Filter options
+    filter_rated = st.selectbox("평가 필터:", ["전체 문장", "평가 완료만", "미평가만"])
+    if filter_rated == "평가 완료만":
+        df_filtered = df_browse[df_browse["평가 여부"] == "예"]
+    elif filter_rated == "미평가만":
+        df_filtered = df_browse[df_browse["평가 여부"] == "아니오"]
+    else:
+        df_filtered = df_browse
+
+    # Search functionality
+    search_query = st.text_input("🔍 문장 검색:")
+    if search_query:
+        df_filtered = df_filtered[df_filtered["원문"].str.contains(search_query, case=False, na=False)]
+
+    st.write(f"{len(df_filtered)} 건의 기록이 있습니다.")
+    st.dataframe(df_filtered, use_container_width=True, hide_index=True)
+
+# 6. Copy Prevention Script (with exemption for user tokens and code blocks)
+components.html("""
+<script>
+    function isCopyable(el) {
+        if (!el) return false;
+        if (el.nodeType === 3) el = el.parentElement;
+        return !!(el && el.closest && el.closest('code, .stCodeBlock, pre, .copyable-token, [data-testid="stCodeBlock"], input'));
+    }
+
+    try {
+        // Prevent context menu (right-click) on parent window unless copyable element
+        window.parent.document.addEventListener('contextmenu', function(e) {
+            if (!isCopyable(e.target)) {
                 e.preventDefault();
-            });
-            // Prevent text selection on parent window body
-            window.parent.document.body.style.userSelect = 'none';
-            window.parent.document.body.style.webkitUserSelect = 'none';
-            window.parent.document.body.style.msUserSelect = 'none';
-        } catch (e) {
-            console.error("Parent window selection restriction bypassed or inaccessible.");
-        }
-        
-        // Disable within the iframe itself
-        document.addEventListener('contextmenu', function(e) {
-            if (!isCopyable(e.target)) e.preventDefault();
+            }
         });
-        document.addEventListener('copy', function(e) {
-            var sel = window.getSelection();
+        // Prevent copy event on parent window unless copyable element or selection
+        window.parent.document.addEventListener('copy', function(e) {
+            var sel = window.parent.getSelection();
             var anchor = sel ? sel.anchorNode : null;
-            if (isCopyable(anchor) || isCopyable(e.target)) return;
+            if (isCopyable(anchor) || isCopyable(e.target)) {
+                return; // Allow copy
+            }
             e.preventDefault();
         });
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
-        document.body.style.msUserSelect = 'none';
-    </script>
-    """, height=0)
+        // Prevent text selection on parent window body
+        window.parent.document.body.style.userSelect = 'none';
+        window.parent.document.body.style.webkitUserSelect = 'none';
+        window.parent.document.body.style.msUserSelect = 'none';
+    } catch (e) {
+        console.error("Parent window selection restriction bypassed or inaccessible.");
+    }
+
+    // Disable within the iframe itself
+    document.addEventListener('contextmenu', function(e) {
+        if (!isCopyable(e.target)) e.preventDefault();
+    });
+    document.addEventListener('copy', function(e) {
+        var sel = window.getSelection();
+        var anchor = sel ? sel.anchorNode : null;
+        if (isCopyable(anchor) || isCopyable(e.target)) return;
+        e.preventDefault();
+    });
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.msUserSelect = 'none';
+</script>
+""", height=0)

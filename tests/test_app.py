@@ -15,27 +15,40 @@ from backend.auth import create_activation_token
 # Test 1: Python syntax compilation test for core files and package modules
 def test_python_syntax_compilation():
     assert py_compile.compile('app.py', doraise=True) is not None
-    assert py_compile.compile(os.path.join('scripts', 'sampling.py'), doraise=True) is not None
     assert py_compile.compile(os.path.join('backend', '__init__.py'), doraise=True) is not None
     assert py_compile.compile(os.path.join('backend', 'auth.py'), doraise=True) is not None
     assert py_compile.compile(os.path.join('backend', 'db.py'), doraise=True) is not None
 
-# Test 2: evaluation_batch_100.json schema and entry verification
-def test_evaluation_batch_json_validity():
-    batch_file = os.path.join("data", "evaluation_batch_100.json")
+# Test 2: Jejueo <-> Standard Korean evaluation dataset schema validation
+# Candidate key names differ by file (e.g. model_1..7 for placeholder data,
+# A..F+REF for the real blind-coded export), so we only check the invariants
+# every direction file must satisfy: a "source" string, an "original_index",
+# and exactly 7 candidate columns per sentence.
+BASE_REQUIRED_KEYS = {"source", "original_index"}
+RESERVED_NON_CANDIDATE_KEYS = BASE_REQUIRED_KEYS | {"example_id"}
+EXPECTED_CANDIDATE_COUNT = 7
+
+@pytest.mark.parametrize("batch_file", [
+    os.path.join("data", "jejueo_to_standard.json"),
+    os.path.join("data", "standard_to_jejueo.json"),
+])
+def test_direction_json_validity(batch_file):
     assert os.path.exists(batch_file), f"{batch_file} does not exist"
-    
+
     with open(batch_file, "r", encoding="utf-8") as f:
         data = json.load(f)
-        
+
     assert isinstance(data, list), "Dataset must be a JSON array"
-    assert len(data) == 100, f"Expected 100 entries, got {len(data)}"
-    
-    required_keys = {"source", "reference", "10M", "100M", "Llama_Simple", "Llama_Preserve", "Llama_FewShot", "OpenAI", "original_index"}
+    assert len(data) > 0, "Dataset must contain at least one entry"
+
     for idx, item in enumerate(data):
-        missing = required_keys - set(item.keys())
+        missing = BASE_REQUIRED_KEYS - set(item.keys())
         assert not missing, f"Item index {idx} missing keys: {missing}"
         assert isinstance(item["source"], str) and len(item["source"]) > 0, f"Item {idx} has invalid source"
+        candidate_keys = [k for k in item.keys() if k not in RESERVED_NON_CANDIDATE_KEYS]
+        assert len(candidate_keys) == EXPECTED_CANDIDATE_COUNT, (
+            f"Item index {idx} has {len(candidate_keys)} candidate columns, expected {EXPECTED_CANDIDATE_COUNT}"
+        )
 
 # Test 3: HMAC Activation Token Generation and Expiration Verification
 SECRET = b"test_secret_seed"
@@ -64,7 +77,7 @@ def test_hmac_token_validity():
     assert verify_test_token(valid_token) is True
 
 def test_src_auth_token_creation():
-    token = create_activation_token(duration_seconds=600)
+    token = create_activation_token(evaluator_id="평가자1", duration_seconds=600)
     assert isinstance(token, str) and "." in token
 
 def test_hmac_token_expired():
