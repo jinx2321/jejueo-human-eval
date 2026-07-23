@@ -823,6 +823,36 @@ elif app_mode == "📊 분석 대시보드":
             })
         df = pd.DataFrame(scores_list)
 
+        # Evaluator assignment / collision check: since each token's group is
+        # derived from a hash (not a fixed roster), two evaluators can land in
+        # the same group by chance. Surface that here so it can be caught early.
+        st.markdown("### 👥 평가자 배정 현황")
+        distinct_tokens = sorted(df["평가자"].unique())
+        group_to_tokens = {}
+        for tok in distinct_tokens:
+            group_to_tokens.setdefault(group_index_for_token(tok), []).append(tok)
+
+        assignment_df = pd.DataFrame(
+            [{"토큰": tok, "배정 그룹": group_index_for_token(tok)} for tok in distinct_tokens]
+        ).sort_values("배정 그룹")
+        st.dataframe(assignment_df, use_container_width=True, hide_index=True)
+
+        collisions = {g: toks for g, toks in group_to_tokens.items() if len(toks) > 1}
+        if collisions:
+            for g, toks in sorted(collisions.items()):
+                st.warning(
+                    f"⚠️ 그룹 {g}번에 {len(toks)}명이 겹쳐 있습니다: {', '.join(toks)} — "
+                    "같은 문장을 중복으로 보게 됩니다. 겹치는 분 중 한 명은 다른 토큰으로 다시 시작해주세요."
+                )
+        else:
+            st.success("✅ 지금까지 참여한 평가자들 간에 배정 그룹 겹침이 없습니다.")
+
+        missing_groups = [g for g in range(NUM_GROUPS) if g not in group_to_tokens]
+        if missing_groups:
+            st.info(f"아직 데이터가 없는 그룹: {', '.join(str(g) for g in missing_groups)}")
+
+        st.markdown("---")
+
         # Optional direction filter for analytics
         direction_filter_options = ["전체"] + [cfg["label"] for cfg in DIRECTIONS.values()]
         direction_filter = st.selectbox("방향 필터:", direction_filter_options)
