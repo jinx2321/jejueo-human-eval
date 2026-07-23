@@ -77,7 +77,7 @@ def test_hmac_token_validity():
     assert verify_test_token(valid_token) is True
 
 def test_src_auth_token_creation():
-    token = create_activation_token(evaluator_id="평가자1", duration_seconds=600)
+    token = create_activation_token(token="myeval01", duration_seconds=600)
     assert isinstance(token, str) and "." in token
 
 def test_hmac_token_expired():

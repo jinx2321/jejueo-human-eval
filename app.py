@@ -11,8 +11,8 @@ import random
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from backend.auth import (
-    EVALUATOR_LOGIN_CHOICES,
-    group_for_evaluator,
+    NUM_GROUPS,
+    group_index_for_token,
     create_activation_token,
     verify_and_clean_activation_token
 )
@@ -55,11 +55,11 @@ DIRECTIONS = {
 }
 KOREAN_ORDINALS = ["가", "나", "다", "라", "마", "바", "사", "아", "자", "차"]
 
-# Ordered evaluator groups: each direction's sentences are split into contiguous,
-# non-overlapping blocks (one per group) so every evaluator reviews a distinct slice
-# and the groups together cover the full dataset with no overlap.
-EVALUATOR_GROUPS = ["group_a", "group_b", "group_c"]
-
+# Each direction's sentences are split into NUM_GROUPS contiguous, non-overlapping
+# blocks so every evaluator (assigned a group index via a hash of their token,
+# see backend.auth.group_index_for_token) reviews a distinct slice, and the
+# groups together cover the full dataset with no overlap.
+#
 # jj2ko and ko2jj are parallel corpora: sentence i in one direction's file is the
 # same underlying sentence pair as sentence i in the other. Rotating the block
 # assignment by one group per direction guarantees no evaluator is ever assigned
@@ -67,19 +67,18 @@ EVALUATOR_GROUPS = ["group_a", "group_b", "group_c"]
 # split into non-overlapping blocks that fully cover it.
 DIRECTION_ROTATION = {"jj2ko": 0, "ko2jj": 1}
 
-def get_assigned_indices(total, group, direction):
+def get_assigned_indices(total, group_index, direction):
     """Return this evaluator's assigned sentence indices for one direction.
 
-    group=None (or unrecognized) means unrestricted/full access (used for the
-    admin preview code). Otherwise the total range is split into
-    len(EVALUATOR_GROUPS) near-equal contiguous blocks, rotated per direction
-    (see DIRECTION_ROTATION) so a given evaluator's blocks never line up across
-    the two directions.
+    group_index=None means unrestricted/full access. Otherwise the total range
+    is split into NUM_GROUPS near-equal contiguous blocks, rotated per
+    direction (see DIRECTION_ROTATION) so a given evaluator's blocks never
+    line up across the two directions.
     """
-    if not group or group not in EVALUATOR_GROUPS:
+    if group_index is None:
         return list(range(total))
-    n = len(EVALUATOR_GROUPS)
-    idx = (EVALUATOR_GROUPS.index(group) + DIRECTION_ROTATION.get(direction, 0)) % n
+    n = NUM_GROUPS
+    idx = (group_index + DIRECTION_ROTATION.get(direction, 0)) % n
     base, remainder = divmod(total, n)
     start = idx * base + min(idx, remainder)
     end = start + base + (1 if idx < remainder else 0)
@@ -135,19 +134,21 @@ def clear_evaluation_session_states():
         del st.session_state.touched_sliders
     st.session_state.dir_state = {}
 
-def log_in_as(evaluator_id):
+def log_in_as(token):
     st.session_state.gate1_unlocked = True
     st.session_state.authenticated = True
-    # No real names anywhere: the chosen ID is both the login identity and the
-    # only thing persisted with scores/notes/exports.
-    st.session_state.token = evaluator_id
-    st.session_state.evaluator_group = group_for_evaluator(evaluator_id)
+    # No real names anywhere: whatever token the evaluator types is both their
+    # login identity and the only thing persisted with scores/notes/exports.
+    # Their group (which slice of each direction they see) is derived from a
+    # stable hash of that token, not a fixed roster.
+    st.session_state.token = token
+    st.session_state.evaluator_group = group_index_for_token(token)
 
 # Initialize login state with 10-minute refresh persistence check
 if "gate1_unlocked" not in st.session_state:
-    verified_id = verify_and_clean_activation_token()
-    if verified_id is not None:
-        log_in_as(verified_id)
+    verified_token = verify_and_clean_activation_token()
+    if verified_token is not None:
+        log_in_as(verified_token)
     else:
         st.session_state.gate1_unlocked = False
         st.session_state.authenticated = False
@@ -156,7 +157,7 @@ else:
     # Continuously clean up expired URL token
     verify_and_clean_activation_token()
 
-# Gate: Consent + Evaluator ID selection (doubles as anti-bot barrier)
+# Gate: Consent + free-text token entry (doubles as anti-bot barrier)
 if not st.session_state.gate1_unlocked:
     st.markdown("<h2 style='text-align: center; margin-top: 100px;'>🍊 제주어-표준어 번역 평가 참여</h2>", unsafe_allow_html=True)
 
@@ -166,28 +167,31 @@ if not st.session_state.gate1_unlocked:
         ##### 연구 참여 안내
         - 이 설문은 제주어-표준어 번역 품질을 사람이 직접 평가하는 연구입니다.
         - 여러분이 매기시는 점수와 남겨주시는 특이사항(선택 의견)은 연구 및 논문 작성 목적으로 사용될 수 있습니다.
-        - 실명은 수집하지 않으며, 데이터는 아래에서 선택하시는 익명 번호로만 저장됩니다.
+        - 실명은 수집하지 않으며, 데이터는 아래에서 직접 정하시는 토큰으로만 저장됩니다. 실명 대신 원하시는 아무 문자열이나 사용해주세요.
         - 참여는 자유의사에 따른 것이며, 언제든지 중단하실 수 있습니다.
         - 문의사항이 있으시면 담당 연구자에게 연락해주세요.
         """)
         consent_given = st.checkbox("위 안내 내용을 읽었으며, 참여에 동의합니다.", key="consent_checkbox")
 
         st.markdown("---")
-        st.markdown("<p style='text-align: center;'>안내받으신 참여자 번호를 선택해주세요.</p>", unsafe_allow_html=True)
-        selected_id = st.selectbox(
-            "참여자 번호를 선택해주세요.",
-            options=EVALUATOR_LOGIN_CHOICES,
-            key="evaluator_id_select",
+        st.markdown("<p style='text-align: center;'>사용하실 토큰을 자유롭게 입력해주세요. (다른 분과 겹치지 않게 정해주세요)</p>", unsafe_allow_html=True)
+        token_input = st.text_input(
+            "토큰을 입력해주세요.",
+            key="token_input",
+            placeholder="예: myeval01",
             label_visibility="collapsed",
         )
         if st.button("참여하기", use_container_width=True):
+            entered_token = token_input.strip()
             if not consent_given:
                 st.error("참여하려면 먼저 위 안내 내용에 동의해주세요.")
+            elif not entered_token:
+                st.error("토큰을 입력해주세요.")
             else:
-                log_in_as(selected_id)
+                log_in_as(entered_token)
                 clear_evaluation_session_states()
                 # Set 10-minute HMAC signed token in query parameters for refresh persistence
-                st.query_params["activation"] = create_activation_token(selected_id, duration_seconds=600)
+                st.query_params["activation"] = create_activation_token(entered_token, duration_seconds=600)
                 st.success("확인되었습니다! 계속 진행해주세요.")
                 st.rerun()
     st.stop()
