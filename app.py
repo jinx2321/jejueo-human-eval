@@ -169,7 +169,7 @@ if not st.session_state.gate1_unlocked:
         - 본 평가는 만 18세 이상이며, 제주도민으로서 제주어를 능숙하게 구사할 수 있는 분을 대상으로 합니다.
         - 각 문항의 답변은 선택하거나 입력하는 즉시 연구 데이터베이스에 저장됩니다.
         - 평가 결과와 선택적으로 작성하신 의견은 연구 및 논문 작성에 사용될 수 있습니다.
-        - 실명은 수집하지 않으며, 응답은 직접 정한 참여자 토큰으로 저장됩니다. 토큰에 이름이나 연락처 등 개인정보를 입력하지 마세요.
+        - 실명은 수집하지 않으며, 응답은 직접 정한 참여자 아이디로 저장됩니다. 아이디에 이름이나 연락처 등 개인정보를 입력하지 마세요.
         - 참여는 자유이며 언제든지 평가를 중단할 수 있습니다. 다만 중단 전에 입력한 답변은 자동으로 삭제되지 않습니다.
         - 문의사항은 담당 연구자에게 연락해주세요.
         """)
@@ -192,18 +192,18 @@ if not st.session_state.gate1_unlocked:
 
             연구 참여는 전적으로 자유이며, 평가 도중 언제든지 브라우저를 닫거나 평가를 중단할 수 있습니다. 참여하지 않거나 중단하더라도 어떠한 불이익도 없습니다.
 
-            다만 평가를 중단하더라도 중단 전에 입력한 답변은 자동으로 삭제되지 않습니다. 저장된 답변의 삭제를 원하는 경우 참여자 토큰과 함께 담당 연구자에게 연락해주세요.
+            다만 평가를 중단하더라도 중단 전에 입력한 답변은 자동으로 삭제되지 않습니다. 저장된 답변의 삭제를 원하는 경우 참여자 아이디와 함께 담당 연구자에게 연락해주세요.
 
             **4. 수집되는 정보**
 
             본 연구에서는 다음 정보를 수집합니다.
 
-            - 참여자 토큰
+            - 참여자 아이디
             - 각 문항의 평가 결과
             - 선택적으로 작성한 의견
             - 답변이 저장된 시각
 
-            실명은 수집하지 않습니다. 참여자 토큰에는 이름, 생년월일, 전화번호, 이메일 등 본인을 식별할 수 있는 정보를 입력하지 마세요.
+            실명은 수집하지 않습니다. 참여자 아이디에는 이름, 생년월일, 전화번호, 이메일 등 본인을 식별할 수 있는 정보를 입력하지 마세요.
 
             **5. 데이터 이용 및 보관**
 
@@ -231,9 +231,9 @@ if not st.session_state.gate1_unlocked:
         consent_given = st.checkbox("본인은 답변이 입력 즉시 저장된다는 점을 포함하여 위 안내를 읽고 이해하였으며, 자발적으로 연구 참여에 동의합니다.", key="consent_checkbox")
 
         st.markdown("---")
-        st.markdown("<p style='text-align: center;'>사용하실 토큰을 자유롭게 입력해주세요. (다른 분과 겹치지 않게 정해주세요)</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'>사용하실 아이디를 자유롭게 입력해주세요. (다른 분과 겹치지 않게 정해주세요)</p>", unsafe_allow_html=True)
         token_input = st.text_input(
-            "토큰을 입력해주세요.",
+            "아이디를 입력해주세요.",
             key="token_input",
             placeholder="예: myeval01",
             label_visibility="collapsed",
@@ -245,7 +245,7 @@ if not st.session_state.gate1_unlocked:
             elif not consent_given:
                 st.error("참여하려면 먼저 답변 저장 방식을 포함한 연구 참여 안내를 확인하고 참여에 동의해주세요.")
             elif not entered_token:
-                st.error("토큰을 입력해주세요.")
+                st.error("아이디를 입력해주세요.")
             else:
                 log_in_as(entered_token)
                 clear_evaluation_session_states()
@@ -892,7 +892,7 @@ elif app_mode == "📊 분석 대시보드":
             group_to_tokens.setdefault(group_index_for_token(tok), []).append(tok)
 
         assignment_df = pd.DataFrame(
-            [{"토큰": tok, "배정 그룹": group_index_for_token(tok)} for tok in distinct_tokens]
+            [{"아이디": tok, "배정 그룹": group_index_for_token(tok)} for tok in distinct_tokens]
         ).sort_values("배정 그룹")
         st.dataframe(assignment_df, use_container_width=True, hide_index=True)
 
@@ -901,7 +901,7 @@ elif app_mode == "📊 분석 대시보드":
             for g, toks in sorted(collisions.items()):
                 st.warning(
                     f"⚠️ 그룹 {g}번에 {len(toks)}명이 겹쳐 있습니다: {', '.join(toks)} — "
-                    "같은 문장을 중복으로 보게 됩니다. 겹치는 분 중 한 명은 다른 토큰으로 다시 시작해주세요."
+                    "같은 문장을 중복으로 보게 됩니다. 겹치는 분 중 한 명은 다른 아이디로 다시 시작해주세요."
                 )
         else:
             st.success("✅ 지금까지 참여한 평가자들 간에 배정 그룹 겹침이 없습니다.")
