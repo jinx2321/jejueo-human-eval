@@ -172,6 +172,8 @@ if not st.session_state.gate1_unlocked:
         - 실명은 수집하지 않으며, 응답은 직접 정한 참여자 아이디로 저장됩니다. 아이디에 이름이나 연락처 등 개인정보를 입력하지 마세요.
         - 참여는 자유이며 언제든지 평가를 중단할 수 있습니다. 다만 중단 전에 입력한 답변은 자동으로 삭제되지 않습니다.
         - 문의사항은 담당 연구자에게 연락해주세요.
+        - 연구에 참여해주셔서 감사합니다!
+        - 고맙수다 😊
         """)
 
         with st.expander("▶ 자세한 연구 안내 보기"):
@@ -235,7 +237,7 @@ if not st.session_state.gate1_unlocked:
         token_input = st.text_input(
             "아이디를 입력해주세요.",
             key="token_input",
-            placeholder="예: myeval01",
+            placeholder="예: gamgyul",
             label_visibility="collapsed",
         )
         if st.button("참여하기", use_container_width=True):
