@@ -29,18 +29,78 @@ NOTES_TABLE_SQL = """
     );
 """
 
+# Persists which group (0..NUM_GROUPS-1) each evaluator token was assigned to.
+# Assignment happens once, at first login (see get_or_assign_group), and is
+# looked up (not recomputed) on every later reconnect so a token always gets
+# back the same sentence slice.
+GROUP_ASSIGNMENTS_TABLE_SQL = """
+    CREATE TABLE IF NOT EXISTS group_assignments (
+        token VARCHAR(64) PRIMARY KEY,
+        group_index INTEGER NOT NULL,
+        assigned_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
+    );
+"""
+
 def init_db():
     try:
         with conn.session as s:
             s.execute(text(RATINGS_TABLE_SQL))
             s.execute(text(NOTES_TABLE_SQL))
+            s.execute(text(GROUP_ASSIGNMENTS_TABLE_SQL))
             s.commit()
     except Exception:
         # Retry connection if serverless SSL connection was closed by idle timeout
         with conn.session as s:
             s.execute(text(RATINGS_TABLE_SQL))
             s.execute(text(NOTES_TABLE_SQL))
+            s.execute(text(GROUP_ASSIGNMENTS_TABLE_SQL))
             s.commit()
+
+def get_or_assign_group(token, num_groups):
+    """
+    Return this token's evaluation group. First login for a token claims
+    whichever group currently has the fewest assigned tokens (ties go to the
+    lowest index), so as long as at most num_groups distinct tokens have ever
+    logged in, every one of them gets a distinct group - no two evaluators
+    are ever handed the same sentence slice until groups must start doubling
+    up beyond that. Later logins just look up the stored assignment.
+    """
+    init_db()
+    with conn.session as s:
+        existing = s.execute(
+            text("SELECT group_index FROM group_assignments WHERE token = :token"),
+            params={"token": token}
+        ).scalar()
+        if existing is not None:
+            return existing
+
+        counts = dict(s.execute(
+            text("SELECT group_index, COUNT(*) FROM group_assignments GROUP BY group_index")
+        ).fetchall())
+        least_loaded = min(range(num_groups), key=lambda g: counts.get(g, 0))
+
+        s.execute(
+            text("""
+                INSERT INTO group_assignments (token, group_index)
+                VALUES (:token, :group_index)
+                ON CONFLICT (token) DO NOTHING;
+            """),
+            params={"token": token, "group_index": least_loaded}
+        )
+        s.commit()
+
+        assigned = s.execute(
+            text("SELECT group_index FROM group_assignments WHERE token = :token"),
+            params={"token": token}
+        ).scalar()
+    return assigned
+
+def load_all_group_assignments():
+    init_db()
+    with conn.session as s:
+        result = s.execute(text("SELECT token, group_index FROM group_assignments ORDER BY assigned_at"))
+        rows = result.fetchall()
+    return rows
 
 def load_ratings_from_db(token, direction):
     init_db()

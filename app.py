@@ -12,7 +12,6 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from backend.auth import (
     NUM_GROUPS,
-    group_index_for_token,
     create_activation_token,
     verify_and_clean_activation_token
 )
@@ -27,7 +26,9 @@ from backend.db import (
     batch_upsert_ratings_to_db,
     load_notes_from_db,
     save_note_to_db,
-    load_all_notes_from_db
+    load_all_notes_from_db,
+    get_or_assign_group,
+    load_all_group_assignments
 )
 
 # 1. Page Configuration and Theme Styling (Must be the first Streamlit command)
@@ -56,9 +57,9 @@ DIRECTIONS = {
 KOREAN_ORDINALS = ["가", "나", "다", "라", "마", "바", "사", "아", "자", "차"]
 
 # Each direction's sentences are split into NUM_GROUPS contiguous, non-overlapping
-# blocks so every evaluator (assigned a group index via a hash of their token,
-# see backend.auth.group_index_for_token) reviews a distinct slice, and the
-# groups together cover the full dataset with no overlap.
+# blocks so every evaluator (assigned a group index once at first login, see
+# backend.db.get_or_assign_group) reviews a distinct slice, and the groups
+# together cover the full dataset with no overlap.
 #
 # jj2ko and ko2jj are parallel corpora: sentence i in one direction's file is the
 # same underlying sentence pair as sentence i in the other. Rotating the block
@@ -139,10 +140,13 @@ def log_in_as(token):
     st.session_state.authenticated = True
     # No real names anywhere: whatever token the evaluator types is both their
     # login identity and the only thing persisted with scores/notes/exports.
-    # Their group (which slice of each direction they see) is derived from a
-    # stable hash of that token, not a fixed roster.
+    # Their group (which slice of each direction they see) is claimed once,
+    # on first login, from whichever group has the fewest tokens so far (see
+    # get_or_assign_group) - guaranteeing no two evaluators share a group
+    # until more than NUM_GROUPS distinct tokens have logged in. Reconnecting
+    # just looks up the stored assignment, so it never changes afterward.
     st.session_state.token = token
-    st.session_state.evaluator_group = group_index_for_token(token)
+    st.session_state.evaluator_group = get_or_assign_group(token, NUM_GROUPS)
 
 # Initialize login state with 10-minute refresh persistence check
 if "gate1_unlocked" not in st.session_state:
@@ -886,29 +890,30 @@ elif app_mode == "📊 분석 대시보드":
             })
         df = pd.DataFrame(scores_list)
 
-        # Evaluator assignment / collision check: since each token's group is
-        # derived from a hash (not a fixed roster), two evaluators can land in
-        # the same group by chance. Surface that here so it can be caught early.
+        # Evaluator assignment: each token's group is claimed once at first
+        # login (see get_or_assign_group) from whichever group had the fewest
+        # tokens at that point, so overlap only happens once more than
+        # NUM_GROUPS distinct tokens have ever logged in.
         st.markdown("### 👥 평가자 배정 현황")
-        distinct_tokens = sorted(df["평가자"].unique())
+        assignment_rows = load_all_group_assignments()
         group_to_tokens = {}
-        for tok in distinct_tokens:
-            group_to_tokens.setdefault(group_index_for_token(tok), []).append(tok)
+        for tok, g in assignment_rows:
+            group_to_tokens.setdefault(g, []).append(tok)
 
         assignment_df = pd.DataFrame(
-            [{"아이디": tok, "배정 그룹": group_index_for_token(tok)} for tok in distinct_tokens]
+            [{"아이디": tok, "배정 그룹": g} for tok, g in assignment_rows]
         ).sort_values("배정 그룹")
         st.dataframe(assignment_df, use_container_width=True, hide_index=True)
 
-        collisions = {g: toks for g, toks in group_to_tokens.items() if len(toks) > 1}
-        if collisions:
-            for g, toks in sorted(collisions.items()):
+        overflow = {g: toks for g, toks in group_to_tokens.items() if len(toks) > 1}
+        if overflow:
+            for g, toks in sorted(overflow.items()):
                 st.warning(
-                    f"⚠️ 그룹 {g}번에 {len(toks)}명이 겹쳐 있습니다: {', '.join(toks)} — "
-                    "같은 문장을 중복으로 보게 됩니다. 겹치는 분 중 한 명은 다른 아이디로 다시 시작해주세요."
+                    f"⚠️ 그룹 {g}번에 {len(toks)}명이 배정되어 있습니다: {', '.join(toks)} — "
+                    f"평가자가 {NUM_GROUPS}명을 넘어서 그룹이 겹치기 시작했습니다. 같은 문장을 중복으로 보게 됩니다."
                 )
         else:
-            st.success("✅ 지금까지 참여한 평가자들 간에 배정 그룹 겹침이 없습니다.")
+            st.success("✅ 지금까지 로그인한 평가자들 간에 배정 그룹 겹침이 없습니다.")
 
         missing_groups = [g for g in range(NUM_GROUPS) if g not in group_to_tokens]
         if missing_groups:
