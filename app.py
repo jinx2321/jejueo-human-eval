@@ -675,6 +675,49 @@ with st.sidebar:
                 use_container_width=True
             )
 
+        # Download everyone's data at once (not just the currently logged-in token)
+        st.markdown("---")
+        st.subheader("📦 전체 평가자 데이터 다운로드")
+        all_rows = load_all_ratings_from_db()
+        if not all_rows:
+            st.info("아직 저장된 평가 데이터가 없습니다.")
+        else:
+            all_notes_rows = load_all_notes_from_db()
+            notes_lookup = {(n_token, n_direction, n_idx): note for n_token, n_direction, n_idx, note in all_notes_rows}
+
+            all_export_dict = {}
+            all_rows_flat = []
+            for row_token, row_direction, s_idx, model, score in all_rows:
+                all_export_dict.setdefault(row_token, {}).setdefault(row_direction, {}).setdefault(str(s_idx), {})[model] = score
+                all_rows_flat.append({
+                    "평가자": row_token,
+                    "방향": DIRECTIONS.get(row_direction, {}).get("label", row_direction),
+                    "문장번호": s_idx,
+                    "모델명": model,
+                    "점수": score,
+                    "원문": db_by_original_index.get(row_direction, {}).get(s_idx, {}).get("source", ""),
+                    "특이사항": notes_lookup.get((row_token, row_direction, s_idx), ""),
+                })
+
+            col_all_json, col_all_csv = st.columns(2)
+            with col_all_json:
+                st.download_button(
+                    label="📥 전체 다운로드 (JSON)",
+                    data=json.dumps(all_export_dict, indent=2, ensure_ascii=False),
+                    file_name="jejueo_all_scores.json",
+                    mime="application/json",
+                    use_container_width=True
+                )
+            with col_all_csv:
+                df_all = pd.DataFrame(all_rows_flat)
+                st.download_button(
+                    label="📥 전체 다운로드 (CSV)",
+                    data=df_all.to_csv(index=False, encoding='utf-8-sig'),
+                    file_name="jejueo_all_scores.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+
         # Reset ratings
         st.markdown("<br><br>", unsafe_allow_html=True)
         if st.button("⚠️ 모든 방향의 점수 초기화", type="secondary", use_container_width=True):
