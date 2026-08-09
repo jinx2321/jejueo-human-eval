@@ -58,12 +58,20 @@ def init_db():
 
 def get_or_assign_group(token, num_groups):
     """
-    Return this token's evaluation group. First login for a token claims
-    whichever group currently has the fewest assigned tokens (ties go to the
-    lowest index), so as long as at most num_groups distinct tokens have ever
-    logged in, every one of them gets a distinct group - no two evaluators
-    are ever handed the same sentence slice until groups must start doubling
-    up beyond that. Later logins just look up the stored assignment.
+    Return this token's evaluation group. First login for a token claims the
+    least-loaded group, ranked by (a) how many tokens are already assigned to
+    it, then (b) how many ratings those tokens have actually submitted -
+    both ascending, ties going to the lowest index.
+
+    (a) alone guarantees the first num_groups distinct tokens each land on a
+    distinct group. Once every group has one token, (a) ties across the
+    board, so (b) takes over: a new token is routed to whichever group has
+    the least completed work rather than always looping back to group 0 -
+    so someone who submits one rating and disappears gets effectively
+    "picked up" by the next new evaluator instead of leaving their slice
+    permanently orphaned while other groups silently double up.
+
+    Later logins just look up the stored assignment, so it never changes.
     """
     init_db()
     with conn.session as s:
@@ -74,10 +82,14 @@ def get_or_assign_group(token, num_groups):
         if existing is not None:
             return existing
 
-        counts = dict(s.execute(
-            text("SELECT group_index, COUNT(*) FROM group_assignments GROUP BY group_index")
-        ).fetchall())
-        least_loaded = min(range(num_groups), key=lambda g: counts.get(g, 0))
+        stats = s.execute(text("""
+            SELECT ga.group_index, COUNT(DISTINCT ga.token) AS token_count, COUNT(r.token) AS work_done
+            FROM group_assignments ga
+            LEFT JOIN ratings r ON r.token = ga.token
+            GROUP BY ga.group_index
+        """)).fetchall()
+        load = {g: (token_count, work_done) for g, token_count, work_done in stats}
+        least_loaded = min(range(num_groups), key=lambda g: load.get(g, (0, 0)))
 
         s.execute(
             text("""
