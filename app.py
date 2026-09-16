@@ -15,6 +15,7 @@ from backend.auth import (
     create_activation_token,
     verify_and_clean_activation_token
 )
+from backend.group_plan import sentence_ids_for_group
 from backend.db import (
     init_db,
     load_ratings_from_db,
@@ -28,7 +29,8 @@ from backend.db import (
     save_note_to_db,
     load_all_notes_from_db,
     get_or_assign_group,
-    load_all_group_assignments
+    load_all_group_assignments,
+    token_is_known
 )
 
 # 1. Page Configuration and Theme Styling (Must be the first Streamlit command)
@@ -56,34 +58,25 @@ DIRECTIONS = {
 }
 KOREAN_ORDINALS = ["가", "나", "다", "라", "마", "바", "사", "아", "자", "차"]
 
-# Each direction's sentences are split into NUM_GROUPS contiguous, non-overlapping
-# blocks so every evaluator (assigned a group index once at first login, see
-# backend.db.get_or_assign_group) reviews a distinct slice, and the groups
-# together cover the full dataset with no overlap.
-#
-# jj2ko and ko2jj are parallel corpora: sentence i in one direction's file is the
-# same underlying sentence pair as sentence i in the other. Rotating the block
-# assignment by one group per direction guarantees no evaluator is ever assigned
-# the same underlying sentence in both directions, while each direction is still
-# split into non-overlapping blocks that fully cover it.
-DIRECTION_ROTATION = {"jj2ko": 0, "ko2jj": 1}
+# Each direction's sentences are split across NUM_GROUPS groups via a fixed
+# assignment table (see backend/group_plan.py) so every evaluator (assigned a
+# group index once at first login, see backend.db.get_or_assign_group)
+# reviews a distinct slice. Group 0 holds the pilot-phase data plus padding;
+# groups 1-5 are even 50/50 splits for new evaluators. Within every group the
+# jj2ko and ko2jj sentence sets are disjoint (jj2ko and ko2jj are parallel
+# corpora - sentence i in one is the same underlying pair as sentence i in
+# the other), so no evaluator is ever assigned the same sentence pair in both
+# directions, and across all groups every sentence is covered exactly once
+# per direction.
 
 def get_assigned_indices(total, group_index, direction):
     """Return this evaluator's assigned sentence indices for one direction.
 
-    group_index=None means unrestricted/full access. Otherwise the total range
-    is split into NUM_GROUPS near-equal contiguous blocks, rotated per
-    direction (see DIRECTION_ROTATION) so a given evaluator's blocks never
-    line up across the two directions.
+    group_index=None means unrestricted/full access.
     """
     if group_index is None:
         return list(range(total))
-    n = NUM_GROUPS
-    idx = (group_index + DIRECTION_ROTATION.get(direction, 0)) % n
-    base, remainder = divmod(total, n)
-    start = idx * base + min(idx, remainder)
-    end = start + base + (1 if idx < remainder else 0)
-    return list(range(start, end))
+    return sentence_ids_for_group(group_index, direction)
 
 # 3. Data Loading Functions
 @st.cache_data
@@ -237,13 +230,19 @@ if not st.session_state.gate1_unlocked:
         consent_given = st.checkbox("본인은 답변이 입력 즉시 저장된다는 점을 포함하여 위 안내를 읽고 이해하였으며, 자발적으로 연구 참여에 동의합니다.", key="consent_checkbox")
 
         st.markdown("---")
-        st.markdown("<p style='text-align: center;'>사용하실 아이디를 자유롭게 입력해주세요. (다른 분과 겹치지 않게 정해주세요)</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center;'>사용하실 아이디를 자유롭게 입력해주세요. 이미 사용된 아이디라면 알려드립니다.</p>", unsafe_allow_html=True)
         token_input = st.text_input(
             "아이디를 입력해주세요.",
             key="token_input",
             placeholder="예: gamgyul",
             label_visibility="collapsed",
         )
+        if st.session_state.get("confirm_existing_token") == token_input.strip() and token_input.strip():
+            st.warning(
+                f"'{token_input.strip()}'은(는) 이미 사용된 적이 있는 아이디입니다. "
+                "예전에 본인이 쓰시던 아이디가 맞다면 '참여하기'를 한 번 더 눌러 이어서 진행해주세요. "
+                "처음이시라면 다른 아이디로 바꿔서 입력해주세요."
+            )
         if st.button("참여하기", use_container_width=True):
             entered_token = token_input.strip()
             if not eligibility_confirmed:
@@ -252,7 +251,13 @@ if not st.session_state.gate1_unlocked:
                 st.error("참여하려면 먼저 답변 저장 방식을 포함한 연구 참여 안내를 확인하고 참여에 동의해주세요.")
             elif not entered_token:
                 st.error("아이디를 입력해주세요.")
+            elif token_is_known(entered_token) and st.session_state.get("confirm_existing_token") != entered_token:
+                # First time we've seen this exact token this session: ask for
+                # confirmation instead of silently merging into someone else's data.
+                st.session_state.confirm_existing_token = entered_token
+                st.rerun()
             else:
+                st.session_state.confirm_existing_token = None
                 log_in_as(entered_token)
                 clear_evaluation_session_states()
                 # Set 10-minute HMAC signed token in query parameters for refresh persistence
@@ -337,9 +342,6 @@ if "sync_status" not in st.session_state:
 
 if "last_sync_time" not in st.session_state:
     st.session_state.last_sync_time = time.time()
-
-if "show_warning" not in st.session_state:
-    st.session_state.show_warning = False
 
 if "touched_sliders" not in st.session_state:
     st.session_state.touched_sliders = {}
@@ -473,33 +475,20 @@ def handle_jump_input_change(direction):
     go_to_ptr(direction, target_ptr)
 
 def next_sentence(direction):
+    # Navigation is intentionally unrestricted: evaluators can move on even
+    # with unrated candidates on the current sentence, and come back later.
+    # Admins can see who's missing what via the coverage view in the
+    # analytics dashboard.
     flush_pending_ratings(force=True)
     ds = get_dir_state(direction)
     db = all_databases[direction]
-    candidate_keys = candidate_keys_by_direction[direction]
     if not ds["session_indices"]:
         return
-    ptr = ds["index_ptr"]
-    s_idx = ds["session_indices"][ptr]
-    db_idx = db[s_idx].get("original_index", s_idx)
-
-    # Check if all candidates for the current sentence are rated/touched
-    all_rated = True
-    for k in candidate_keys:
-        touch_key = f"{direction}_{db_idx}_{k}"
-        if not st.session_state.get("touched_sliders", {}).get(touch_key, False):
-            all_rated = False
-            break
-
-    if all_rated:
-        if ds["index_ptr"] < len(ds["session_indices"]) - 1:
-            ds["index_ptr"] += 1
-            new_s_idx = ds["session_indices"][ds["index_ptr"]]
-            new_db_idx = db[new_s_idx].get("original_index", new_s_idx)
-            ds["shuffled_candidates"].pop(new_db_idx, None)
-        st.session_state.show_warning = False
-    else:
-        st.session_state.show_warning = True
+    if ds["index_ptr"] < len(ds["session_indices"]) - 1:
+        ds["index_ptr"] += 1
+        new_s_idx = ds["session_indices"][ds["index_ptr"]]
+        new_db_idx = db[new_s_idx].get("original_index", new_s_idx)
+        ds["shuffled_candidates"].pop(new_db_idx, None)
     sync_jump_input(direction, ds)
 
 def prev_sentence(direction):
@@ -513,7 +502,6 @@ def prev_sentence(direction):
         new_s_idx = ds["session_indices"][ds["index_ptr"]]
         new_db_idx = db[new_s_idx].get("original_index", new_s_idx)
         ds["shuffled_candidates"].pop(new_db_idx, None)
-    st.session_state.show_warning = False
     sync_jump_input(direction, ds)
 
 def go_to_ptr(direction, ptr):
@@ -527,7 +515,6 @@ def go_to_ptr(direction, ptr):
         new_s_idx = ds["session_indices"][ptr]
         new_db_idx = db[new_s_idx].get("original_index", new_s_idx)
         ds["shuffled_candidates"].pop(new_db_idx, None)
-    st.session_state.show_warning = False
     sync_jump_input(direction, ds)
 
 # Main structure
@@ -744,9 +731,13 @@ elif app_mode == "📝 문장 평가":
     db_idx = current_item.get("original_index", s_idx)
     session_size = len(ds["session_indices"])
 
-    # Show warning at the top of navigation (Next button is nearby)
-    if st.session_state.get("show_warning", False):
-        st.warning("아직 평가하지 않은 후보 문장이 있습니다. 모두 평가한 후 다시 진행해주세요!")
+    # Gentle, non-blocking reminder if this sentence isn't fully rated yet -
+    # navigation itself is never blocked, so evaluators can freely skip ahead
+    # and come back later.
+    current_item_scores_preview = ds["scores"].get(str(db_idx), {})
+    rated_count_preview = sum(1 for k in candidate_keys if current_item_scores_preview.get(k) is not None)
+    if rated_count_preview < len(candidate_keys):
+        st.caption(f"ℹ️ 이 문장은 아직 {rated_count_preview}/{len(candidate_keys)}개 후보만 평가하셨습니다. 나중에 돌아와서 마저 평가하셔도 됩니다.")
 
     # Navigation buttons layout - compact text size
     col_prev, col_num, col_next = st.columns([1, 2, 1])
@@ -961,6 +952,55 @@ elif app_mode == "📊 분석 대시보드":
         missing_groups = [g for g in range(NUM_GROUPS) if g not in group_to_tokens]
         if missing_groups:
             st.info(f"아직 데이터가 없는 그룹: {', '.join(str(g) for g in missing_groups)}")
+
+        # Per-evaluator, per-direction coverage: how much of their assigned
+        # slice they've actually rated, and exactly which sentences are still
+        # partially rated or untouched.
+        st.markdown("### 🧭 평가자별 진행 현황")
+        ratings_by_token_dir_sent = {}
+        for tok, row_direction, s_idx, model, _score in all_rows:
+            ratings_by_token_dir_sent.setdefault((tok, row_direction), {}).setdefault(s_idx, set()).add(model)
+
+        coverage_rows = []
+        gap_details = {}
+        for tok, group_idx in assignment_rows:
+            for direction_key, dir_cfg_i in DIRECTIONS.items():
+                db_i = all_databases[direction_key]
+                cand_keys_i = candidate_keys_by_direction[direction_key]
+                assigned_positions = get_assigned_indices(len(db_i), group_idx, direction_key)
+                assigned_db_idxs = [db_i[p].get("original_index", p) for p in assigned_positions]
+                rated_map = ratings_by_token_dir_sent.get((tok, direction_key), {})
+
+                full = partial = untouched = 0
+                missing_ids = []
+                for db_i_idx in assigned_db_idxs:
+                    n_done = len(rated_map.get(db_i_idx, set()))
+                    if n_done >= len(cand_keys_i):
+                        full += 1
+                    elif n_done == 0:
+                        untouched += 1
+                        missing_ids.append(db_i_idx)
+                    else:
+                        partial += 1
+                        missing_ids.append(db_i_idx)
+
+                coverage_rows.append({
+                    "아이디": tok,
+                    "방향": dir_cfg_i["label"],
+                    "배정": len(assigned_db_idxs),
+                    "완료": full,
+                    "부분 완료": partial,
+                    "미착수": untouched,
+                })
+                if missing_ids:
+                    gap_details[(tok, dir_cfg_i["label"])] = sorted(missing_ids)
+
+        st.dataframe(pd.DataFrame(coverage_rows), use_container_width=True, hide_index=True)
+
+        if gap_details:
+            with st.expander("🔎 놓친 문장 번호 자세히 보기"):
+                for (tok, dlabel), ids in gap_details.items():
+                    st.markdown(f"**{tok}** ({dlabel}): " + ", ".join(f"#{i}" for i in ids))
 
         st.markdown("---")
 

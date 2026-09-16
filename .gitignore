@@ -115,3 +115,7 @@ jejueo_human_eval_300.json
 jejueo_human_eval_300_ko2je.json
 data/jejueo_to_standard_meta.json
 data/standard_to_jejueo_meta.json
+
+# Downloaded production DB snapshots / exports (real participant data - never commit)
+jejueo_all_scores.json
+crimson-field-*.json

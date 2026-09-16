@@ -107,6 +107,21 @@ def get_or_assign_group(token, num_groups):
         ).scalar()
     return assigned
 
+def token_is_known(token):
+    """
+    True if this token has already claimed a group (i.e. it has logged in
+    before). Used at login time to warn when someone types an ID that's
+    already in use, since two people accidentally sharing one ID would
+    silently merge their scores.
+    """
+    init_db()
+    with conn.session as s:
+        result = s.execute(
+            text("SELECT COUNT(*) FROM group_assignments WHERE token = :token"),
+            params={"token": token}
+        )
+        return result.scalar() > 0
+
 def load_all_group_assignments():
     init_db()
     with conn.session as s:
