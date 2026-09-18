@@ -61,13 +61,17 @@ KOREAN_ORDINALS = ["가", "나", "다", "라", "마", "바", "사", "아", "자"
 # Each direction's sentences are split across NUM_GROUPS groups via a fixed
 # assignment table (see backend/group_plan.py) so every evaluator (assigned a
 # group index once at first login, see backend.db.get_or_assign_group)
-# reviews a distinct slice. Group 0 holds the pilot-phase data plus padding;
-# groups 1-5 are even 50/50 splits for new evaluators. Within every group the
-# jj2ko and ko2jj sentence sets are disjoint (jj2ko and ko2jj are parallel
-# corpora - sentence i in one is the same underlying pair as sentence i in
-# the other), so no evaluator is ever assigned the same sentence pair in both
-# directions, and across all groups every sentence is covered exactly once
-# per direction.
+# reviews a distinct slice. Group sizes are NOT all the same: group 0 is the
+# pilot-phase owner's slice, group 4 is fixed to one evaluator's full actual
+# work (which grew past a normal 50/50 quota), and group 5 was left smaller
+# than 50/50 after a rebalance had to give group 4 priority - see the
+# comments at the top of backend/group_plan.py for why. Within every group
+# the jj2ko and ko2jj sentence sets are disjoint (jj2ko and ko2jj are
+# parallel corpora - sentence i in one is the same underlying pair as
+# sentence i in the other), so no evaluator is ever assigned the same
+# sentence pair in both directions, and across all groups every sentence is
+# covered at most once per direction (a few sentences are deliberately
+# excluded from every group - see backend/group_plan.py).
 
 def get_assigned_indices(total, group_index, direction):
     """Return this evaluator's assigned sentence indices for one direction.
