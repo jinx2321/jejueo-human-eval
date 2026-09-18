@@ -73,13 +73,23 @@ KOREAN_ORDINALS = ["가", "나", "다", "라", "마", "바", "사", "아", "자"
 # covered at most once per direction (a few sentences are deliberately
 # excluded from every group - see backend/group_plan.py).
 
+# If an evaluator's real group assignment can't be determined for some
+# reason (the self-heal check at login retries this, so it should be rare -
+# see that check for what's suspected to cause it), fall back to this fixed
+# group rather than ever handing out unrestricted access to every sentence.
+# "test1" (group 1) has no real evaluator actively using it, so a stray
+# fallback-triggered rating here is low-cost and easy to spot/clean up,
+# unlike accidentally mixing into an active evaluator's own group.
+FALLBACK_GROUP_INDEX = 1
+
 def get_assigned_indices(total, group_index, direction):
     """Return this evaluator's assigned sentence indices for one direction.
 
-    group_index=None means unrestricted/full access.
+    group_index=None means the evaluator's real assignment is unknown -
+    use FALLBACK_GROUP_INDEX instead of ever returning unrestricted access.
     """
     if group_index is None:
-        return list(range(total))
+        group_index = FALLBACK_GROUP_INDEX
     return sentence_ids_for_group(group_index, direction)
 
 # 3. Data Loading Functions
@@ -338,6 +348,15 @@ if "direction" not in st.session_state:
 if "dir_state" not in st.session_state:
     st.session_state.dir_state = {}
 
+if st.session_state.get("authenticated") and st.session_state.get("token") and st.session_state.get("evaluator_group") is None:
+    # evaluator_group should always have been set by log_in_as() at login
+    # time. If it's ever missing here - the suspected cause of evaluators
+    # occasionally seeing all 300 unrestricted sentences on a fresh
+    # connection is a transient failed/empty read on a cold DB connection -
+    # redo the lookup now instead of letting get_assigned_indices() fall
+    # back to unrestricted access for this run.
+    st.session_state.evaluator_group = get_or_assign_group(st.session_state.token, NUM_GROUPS)
+
 if "pending_updates" not in st.session_state:
     st.session_state.pending_updates = {}
 
@@ -352,7 +371,8 @@ if "touched_sliders" not in st.session_state:
 
 def get_dir_state(direction):
     """Lazily initialize (and cache) per-direction scores + navigation state."""
-    if direction not in st.session_state.dir_state:
+    is_group_pending = st.session_state.get("authenticated") and st.session_state.get("evaluator_group") is None
+    if direction not in st.session_state.dir_state or (is_group_pending and "_group_pending" in st.session_state.dir_state.get(direction, {})):
         db = all_databases.get(direction, [])
         total = len(db)
         scores = {}
@@ -375,6 +395,14 @@ def get_dir_state(direction):
             "index_ptr": index_ptr,
             "shuffled_candidates": {},
         }
+        # Mark this cache entry as provisional if it was built before this
+        # evaluator's group assignment was known, so the next rerun (once
+        # evaluator_group is set - see the self-heal check above) rebuilds
+        # it with the correct restricted sentence list instead of being
+        # stuck showing every sentence unrestricted for the rest of the
+        # session.
+        if is_group_pending:
+            st.session_state.dir_state[direction]["_group_pending"] = True
     ds = st.session_state.dir_state[direction]
     # Ensure index pointer is valid
     if len(ds["session_indices"]) > 0:
