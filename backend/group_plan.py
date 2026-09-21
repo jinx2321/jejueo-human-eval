@@ -51,6 +51,34 @@
 # Built with random.seed(11) against a 2026-09-18 production data export;
 # see scratchpad history in that session for the generating script if this
 # ever needs to be regenerated.
+#
+# 2026-09-21: by this point almost the entire 300-sentence corpus was
+# already touched or claimed by some group (only ~1 genuinely free sentence
+# left anywhere), so a brand new evaluator ("chloe") got auto-routed to
+# group 5 by the least-loaded-group logic - whose sentences had, in the
+# meantime, already been fully rated by noiznoiz17 before their group1/5
+# swap. She unknowingly duplicated 9 of them before this was caught. Rather
+# than throw that away, group 3 (ddudu's slot - inactive since 2026-09-16,
+# never completed a single sentence) was handed to her instead: her 9
+# already-rated sentences stay put, and the rest of group 3's untouched
+# territory fills in around them. That alone landed short of a full 50/50
+# (7 of her 9 already-rated jj2ko sentences happen to numerically coincide
+# with what would have been group 3's ko2jj list, and 2 similarly collided
+# on the jj2ko side too), with no spare, unclaimed territory left anywhere
+# else in the corpus to make up the difference - so the user chose to close
+# the gap by lending group 3 a handful of sentences (7 ko2jj + 2 jj2ko)
+# carved out of group 2 (g)'s own untouched territory instead, since g has
+# been just as inactive as ddudu. Group 2 now sits at 48 jj2ko / 43 ko2jj
+# rather than 50/50 as a result - the same kind of trade made for group 5
+# earlier, just smaller and paid by a different idle group.
+#
+# Group 5's definition below is now STALE/DANGEROUS: it's "test1"'s nominal
+# slot since the noiznoiz17/test1 swap, but every sentence in it has
+# already been fully rated by noiznoiz17. If the least-loaded-group logic
+# ever routes another brand new evaluator there, they'll silently duplicate
+# an already-completed slice exactly like chloe did - there was no spare
+# territory left in the corpus to fix this preemptively. Rebuild it (or
+# retire it) before that happens again.
 
 GROUP_SENTENCE_IDS = {
     0: {
@@ -62,12 +90,12 @@ GROUP_SENTENCE_IDS = {
         "ko2jj": [4, 6, 13, 17, 19, 30, 31, 38, 40, 41, 56, 62, 73, 74, 81, 96, 101, 117, 119, 127, 154, 170, 172, 173, 177, 178, 180, 193, 198, 199, 200, 205, 209, 218, 226, 229, 231, 234, 240, 242, 246, 247, 254, 258, 271, 284, 288, 289, 292, 299],
     },
     2: {
-        "jj2ko": [5, 71, 79, 81, 84, 85, 90, 92, 96, 97, 133, 134, 139, 143, 155, 166, 168, 169, 170, 171, 177, 180, 183, 186, 197, 203, 205, 208, 209, 218, 222, 228, 229, 233, 240, 243, 244, 246, 250, 253, 258, 260, 265, 268, 285, 288, 290, 293, 295, 296],
-        "ko2jj": [0, 9, 20, 32, 36, 37, 46, 49, 54, 60, 61, 64, 70, 72, 88, 94, 103, 105, 106, 107, 108, 113, 116, 137, 144, 145, 147, 148, 150, 157, 158, 189, 192, 201, 213, 216, 219, 223, 224, 245, 259, 261, 263, 264, 266, 269, 279, 280, 281, 287],
+        "jj2ko": [5, 71, 79, 81, 84, 85, 90, 92, 96, 97, 133, 134, 139, 143, 166, 168, 169, 170, 171, 177, 180, 183, 197, 203, 205, 208, 209, 218, 222, 228, 229, 233, 240, 243, 244, 246, 250, 253, 258, 260, 265, 268, 285, 288, 290, 293, 295, 296],
+        "ko2jj": [9, 32, 36, 37, 46, 54, 61, 64, 70, 72, 88, 94, 103, 105, 106, 107, 108, 113, 116, 137, 144, 147, 148, 150, 157, 158, 192, 201, 213, 216, 219, 223, 224, 245, 259, 261, 263, 264, 269, 279, 280, 281, 287],
     },
     3: {
-        "jj2ko": [1, 56, 58, 59, 60, 70, 75, 82, 98, 144, 147, 148, 159, 160, 161, 179, 181, 193, 195, 198, 202, 207, 211, 212, 219, 223, 225, 230, 231, 234, 235, 247, 255, 259, 261, 263, 264, 266, 269, 270, 271, 272, 274, 275, 279, 289, 292, 297, 298, 299],
-        "ko2jj": [11, 24, 25, 35, 39, 45, 48, 55, 57, 67, 71, 84, 85, 92, 93, 100, 109, 114, 118, 120, 125, 130, 134, 136, 138, 146, 156, 166, 168, 171, 174, 176, 183, 185, 194, 196, 206, 210, 217, 221, 222, 237, 241, 249, 276, 278, 283, 285, 286, 295],
+        "jj2ko": [56, 59, 67, 82, 86, 93, 98, 136, 138, 144, 147, 148, 155, 158, 159, 160, 161, 174, 179, 181, 186, 193, 195, 198, 202, 207, 211, 212, 217, 219, 223, 225, 234, 247, 255, 261, 263, 264, 269, 270, 271, 272, 274, 275, 279, 286, 289, 292, 297, 299],
+        "ko2jj": [0, 11, 20, 24, 25, 35, 39, 45, 48, 49, 55, 57, 60, 71, 84, 85, 92, 100, 109, 114, 118, 120, 125, 130, 134, 145, 146, 156, 166, 168, 171, 176, 183, 185, 189, 194, 196, 206, 210, 221, 222, 237, 241, 249, 266, 276, 278, 283, 285, 295],
     },
     4: {
         "jj2ko": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 64, 73, 74, 78, 91, 94, 142, 145, 146, 153, 154, 162, 165, 172, 173, 176, 182, 184, 190, 192, 196, 199, 206, 213, 216, 221, 224, 226, 227, 232, 238, 241, 242, 245, 249, 254, 283, 287, 294],

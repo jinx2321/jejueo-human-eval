@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 from sqlalchemy import text
 
@@ -74,14 +75,26 @@ def get_or_assign_group(token, num_groups):
     Later logins just look up the stored assignment, so it never changes.
     """
     init_db()
-    with conn.session as s:
-        existing = s.execute(
-            text("SELECT group_index FROM group_assignments WHERE token = :token"),
-            params={"token": token}
-        ).scalar()
+
+    # A token that already has a row here has occasionally not been found by
+    # this lookup, falling through into "assign this as a brand new token"
+    # and landing the evaluator in the wrong group. The one confirmed
+    # instance of this turned out to be a stale Streamlit Cloud deployment
+    # still running old code, not a bad read - but retrying a couple of
+    # times before concluding a token is genuinely new costs nothing in the
+    # normal case and is cheap insurance against an actual transient read.
+    for attempt in range(3):
+        with conn.session as s:
+            existing = s.execute(
+                text("SELECT group_index FROM group_assignments WHERE token = :token"),
+                params={"token": token}
+            ).scalar()
         if existing is not None:
             return existing
+        if attempt < 2:
+            time.sleep(0.3)
 
+    with conn.session as s:
         stats = s.execute(text("""
             SELECT ga.group_index, COUNT(DISTINCT ga.token) AS token_count, COUNT(r.token) AS work_done
             FROM group_assignments ga
